@@ -1,12 +1,14 @@
+const config = require('config');
 
+const ldapConfig = config.get('Credentials.LDAP');
 class ADMediator {
 
     constructor() {
         let ADModule = require('ad');
         this.ad = new ADModule({
-            url: 'ldaps://ATWATER.local',
-            user: '',
-            pass: '',
+            url: 'ldaps://' + ldapConfig.host,
+            user: ldapConfig.username,
+            pass: ldapConfig.password,
         });
 
 
@@ -15,6 +17,7 @@ class ADMediator {
     async userExists(username) {
         return await this.ad.user(username).exists();
     }
+
 
     async createUser(firstName, lastName, title, site) {
         let siteToOU = {
