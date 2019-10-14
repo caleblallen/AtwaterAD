@@ -1,24 +1,21 @@
 const request = require('supertest');
-const server = require('../bin/www');
-//const express = require('');
+const server = require('../bin/www'); //Keeps the Server running after tests.
 const app = require('../app');
-
-//encodings = require('../node_modules/iconv-lite/encodings');
 var should = require('chai').should();
-var numbers = [1, 2, 3, 4, 5];
 
-console.log('\n');
-console.log('Running Route Tests'.padStart(35, '╤═╧═').padEnd(55, '═╧═╤'));
-console.log('\n');
 
 describe('Root Connectivity Test', function () {
 
+
     /*
-        // add a test hook
-        beforeEach(function() {
-            // ...some logic before each test is run
-        })
+            // add a test hook
+            before(function() {
+                console.log('\n');
+                console.log('Running Route Tests'.padStart(35, '╤═╧═').padEnd(55, '═╧═╤'));
+                console.log('\n');
+            });
     */
+
 
     it('The Server should Respond to GET Requests to the Root Directory.', function (done) {
         // add an assertion
@@ -88,4 +85,27 @@ describe('/userExists Test', function () {
     });
 
 });
+//
+//
+// describe('Root Connectivity Test', function () {
+//
+//     /*
+//         // add a test hook
+//         beforeEach(function() {
+//             // ...some logic before each test is run
+//         })
+//     */
+//
+//     it('The Server should Respond to GET Requests to the Root Directory.', function (done) {
+//         // add an assertion
+//         request(app).get('/').end((err, res) => {
+//             if (err) return done(err);
+//             res.statusCode.should.equal(200);
+//             done();
+//         });
+//     })
+//
+//
+// });
+//
 
