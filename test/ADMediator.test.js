@@ -44,6 +44,8 @@ describe('Mediator Object should construct without errors', function () {
                 result['givenName'].should.equal(fn);
                 result['sn'].should.equal(ln);
                 result['title'].should.equal(t);
+                result['canAuthenticate'].should.equal(true);
+                result['moveSuccessful'].should.equal(true);
                 return result['uid'];
             }
         ).then((uid) => {
@@ -53,39 +55,46 @@ describe('Mediator Object should construct without errors', function () {
             })
         });
     });
-    /* it('Mediator should handle similar common names..', (done) => {
-         // let fn = 'Spongebob';
-         // let ln = 'Squarepants';
-         // let t = 'Consultant';
-         // let st = 'Bellevue';
-         //
-         // Mediator.createUser(fn,ln,t,st)
-         //     .then( (result) => {
-         //         result['givenName'].should.equal(fn);
-         //         result['sn'].should.equal(ln);
-         //         result['title'].should.equal(t);
-         //         return result['uid'];
-         //     })
-         //     .then( (uid1) => {
-         //         Mediator.createUser(fn,ln,t,st)
-         //             .then( (secondResult) => {
-         //                 result['givenName'].should.equal(fn);
-         //                 result['sn'].should.equal(ln);
-         //                 result['title'].should.equal(t);
-         //                 result['uid'].should.not.be.equal(uid1);
-         //                 return result['uid']
-         //             }).then( (uid2) => {
-         //                 Mediator.deleteUser(uid1).then( (delResult1) => {
-         //                     delResult1['success'].should.be.equal(true);
-         //                     Mediator.deleteUser(uid2).then( (delResult2) => {
-         //                         delResult2['success'].should.be.equal(true);
-         //                     })
-         //                     }
-         //                 )
-         //             done();
-         //         })
-         //
-         // });
 
-     });*/
+    it('Mediator should create users with the same name. At least 2 with identical OU and Common Name.', (done) => {
+        let fn = 'Patrick';
+        let ln = 'Star';
+        let t = 'Consultant';
+        let st = 'Thomas Olaeta';
+        let mn = 'Bill Reginald';
+        let suf = 'Jr.';
+
+        let uName1 = '';
+        let uName2 = '';
+
+        Mediator.createUser(fn, ln, mn, suf, t, st).then(
+            (result) => {
+                result['givenName'].should.equal(fn);
+                result['sn'].should.equal(ln);
+                result['title'].should.equal(t);
+                result['canAuthenticate'].should.equal(true);
+                result['moveSuccessful'].should.equal(true);
+                uName1 = result['uid'];
+            }
+        ).then(() => {
+            Mediator.createUser(fn, ln, mn, suf, t, st).then(
+                (result) => {
+                    result['givenName'].should.equal(fn);
+                    result['sn'].should.equal(ln);
+                    result['title'].should.equal(t);
+                    result['canAuthenticate'].should.equal(true);
+                    result['moveSuccessful'].should.equal(false);
+                    uName2 = result['uid'];
+                }
+            ).then(() => {
+                Mediator.deleteUser(uName1).then((res) => {
+                    res['success'].should.be.equal(true);
+                    Mediator.deleteUser(uName2).then((res) => {
+                        res['success'].should.be.equal(true);
+                        done();
+                    })
+                })
+            });
+        });
+    })
 });

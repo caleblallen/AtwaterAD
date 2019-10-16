@@ -9,16 +9,21 @@ var Mediator = new ADM().getInstance();
 /*Import Filter*/
 var validateRequestSchema = require('../bin/inputFilters').validateRequestSchema;
 
+let RequiredKeys = ['firstName', 'lastName', 'middleNames', 'suffix', 'otherSites', 'employeeNumber', 'title', 'primarySite'];
 
-/* Verify that a username exists */
-router.post('/',
-    validateRequestSchema(['firstName', 'lastName', 'middleNames', 'suffix', 'otherSites', 'employeeNumber', 'title', 'primarySite']),
-    async (req, res, next) => {
-
-        //firstName, lastName, middleNames, suffix, title, primarySite, otherSites = [], eNumber = 0
+router.post('/', validateRequestSchema(RequiredKeys), async (req, res, next) => {
+    try {
         let result = await Mediator.createUser(req.body['firstName'], req.body['lastName'], req.body["middleNames"],
             req.body["suffix"], req.body['title'], req.body['primarySite'], req.body['otherSites'], req.body['employeeNumber']);
-    res.json(result);
+        res.json(result);
+    } catch (err) {
+        res.json({
+            error: true,
+            errorMessage: "Unable to create user: " + err,
+            dataReceived: req.body
+        })
+    }
+
 });
 
 router.get('/', (req, res, next) => {

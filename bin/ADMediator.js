@@ -12,34 +12,40 @@ class ADMediator {
             pass: ldapConfig.password,
         });
 
-
     }
 
     async userExists(username) {
         return await this.ad.user(username).exists();
     }
 
-
     async createUser(firstName, lastName, middleNames, suffix, title, primarySite, otherSites = [], eNumber = 0) {
-        let siteToOU = config.get('Templates.SiteToOU')
+        //Pull our Site to OU Mapping from the Default Configuration
+        let siteToOU = config.get('Templates.SiteToOU');
+
+        //Create a username following AESD Policies
         let uName = await this.generateUsername(firstName, lastName);
 
         if (uName === null) {
             throw `No applicable username available for ${firstName} ${lastName}`;
         }
 
+
+        //Initialize return object
         let userCreated = {};
+
+        //Collector for middle initials
+        let middleInitials = "";
+
+        //Extract middle initials.
+        if (middleNames.length > 0) {
+            middleInitials = middleNames.split(' ').reduce((collector, currentName) => {
+                return collector + currentName.charAt(0)
+            }, "");
+        }
+
         let password = this.generatePassword(firstName, lastName);
+
         try {
-
-            let middleInitials = "";
-
-            if (middleNames.length > 0) {
-                middleInitials = middleNames.split(' ').reduce((collector, currentName) => {
-                    return collector + currentName.charAt(0)
-                }, "");
-            }
-
             /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU The process will bug out. Implement Checking.*/
             userCreated = await this.ad.user().add({
                 userName: uName,
@@ -57,25 +63,20 @@ class ADMediator {
                 employeeNumber: eNumber,
                 location: siteToOU['Lander'],
                 passwordExpires: false,
-                /*Adding users here to a lander and the moving them to their final destination in an separate operation.
-                * Pros:
-                *   1) Lowers likelihood of running into issues with duplicate Common Names.
-                *   2) Prevents rights from being granted to duplicate users until the matter has been resolved.
-                *
-                *   3) Ensures the account is created even if subsequent operations fail. (Maybe this should just be cleaned up???)
-                * Cons:
-                *   1) We have to engage in a separate move operation after creation.*/
             });
-
-
-
         } catch (err) {
             console.log("Error in ADMediator.createUser: ", err);
         }
-        //TODO: Handle failure
+
+        //Extract a function set for the user we just created.
+        let usr = this.ad.user(userCreated['sAMAccountName']);
+
+        //Initialize collector for moveOperation status.
+        let moveOperation = {success: false};
 
         try {
-            const moveOperation = await this.ad.user(userCreated['sAMAccountName']).move(siteToOU[primarySite]);
+            //Attempt to move user from the Lander to the appropriate OU
+            moveOperation = await usr.move(siteToOU[primarySite]);
         } catch (err) {
             if (err['message'].includes('ENTRY_EXISTS')) {
                 //TODO: This could be refactored to force the movement by deleting the user and then recreating with a different common name.
@@ -87,17 +88,18 @@ class ADMediator {
             }
         }
 
+        //Initialize flag to indicate whether the system can successfully authenticate with the new credentials.
+        userCreated['canAuthenticate'] = false;
         try {
             //TODO: Handle failure
-            const canAuthenticate = await this.ad.user(userCreated['sAMAccountName']).authenticate(password);
+            userCreated['canAuthenticate'] = await usr.authenticate(password);
         } catch (err) {
             console.log("Error Authenticating user: ", err);
         }
 
+        userCreated['moveSuccessful'] = moveOperation['success'];
         userCreated['password'] = password;
         return userCreated;
-
-
     }
 
     generatePassword(firstName, lastName) {
@@ -116,7 +118,6 @@ class ADMediator {
             } catch (err) {
                 console.log('ADMediator.generateUsername. Error checking for username existance.', err);
             }
-
 
             if (!isTaken) {
                 return uName;

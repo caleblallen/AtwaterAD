@@ -3,10 +3,6 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-//Initialize the Active Directory Connection Singleton.
-var connMgr = require('./bin/ADConnectionManager');
-var adConn = new connMgr();
-
 
 var indexRouter = require('./routes/index');
 var userExistsRouter = require('./routes/userExists')
