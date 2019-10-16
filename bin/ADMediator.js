@@ -20,14 +20,8 @@ class ADMediator {
     }
 
 
-    async createUser(firstName, lastName, title, site) {
-        let siteToOU = {
-            'Aileen Colburn': 'AESD/Aileen Colburn/Staff',
-            'Bellevue': 'AESD/Bellevue/Staff',
-            //TODO: Replace with Config File or DB Call.
-        };
-
-
+    async createUser(firstName, lastName, middleNames, suffix, title, primarySite, otherSites = [], eNumber = 0) {
+        let siteToOU = config.get('Templates.SiteToOU')
         let uName = await this.generateUsername(firstName, lastName);
 
         if (uName === null) {
@@ -37,8 +31,16 @@ class ADMediator {
         let userCreated = {};
         let password = this.generatePassword(firstName, lastName);
         try {
-            /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU
-            The process will bug out. Implement Checking.*/
+
+            let middleInitials = "";
+
+            if (middleNames.length > 0) {
+                middleInitials = middleNames.split(' ').reduce((collector, currentName) => {
+                    return collector + currentName.charAt(0)
+                }, "");
+            }
+
+            /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU The process will bug out. Implement Checking.*/
             userCreated = await this.ad.user().add({
                 userName: uName,
                 password: password,
@@ -46,31 +48,50 @@ class ADMediator {
                 firstName: firstName,
                 lastName: lastName,
                 title: title,
-                office: 'Bellevue',
-                location: 'AESD/AtwaterPeopleLander'
+                office: (otherSites.length > 0) ? primarySite + " " + otherSites.join(' ') : primarySite,
+                description: title,
+                displayName: `${firstName} ${middleNames} ${lastName} ${suffix}`,
+                initials: `${firstName.charAt(0)}${middleInitials}${lastName.charAt(0)}`,
+                department: primarySite,
+                company: config.get('Templates.CompanyName'),
+                employeeNumber: eNumber,
+                location: siteToOU['Lander'],
+                passwordExpires: false,
                 /*Adding users here to a lander and the moving them to their final destination in an separate operation.
                 * Pros:
                 *   1) Lowers likelihood of running into issues with duplicate Common Names.
                 *   2) Prevents rights from being granted to duplicate users until the matter has been resolved.
+                *
                 *   3) Ensures the account is created even if subsequent operations fail. (Maybe this should just be cleaned up???)
                 * Cons:
                 *   1) We have to engage in a separate move operation after creation.*/
             });
 
-            //TODO: Handle failure
-            const moveOperation = await this.ad.user(userCreated['sAMAccountName']).move(siteToOU[site]);
 
-            //TODO: Handle failure
-            const pwExpire = await this.ad.user(userCreated['sAMAccountName']).passwordNeverExpires();
-
-            //TODO: Handle failure
-            const enableUsr = await this.ad.user(userCreated['sAMAccountName']).enable();
-
-            //TODO: Handle failure
-            const canAuthenticate = await this.ad.user(userCreated['sAMAccountName']).authenticate(password);
 
         } catch (err) {
             console.log("Error in ADMediator.createUser: ", err);
+        }
+        //TODO: Handle failure
+
+        try {
+            const moveOperation = await this.ad.user(userCreated['sAMAccountName']).move(siteToOU[primarySite]);
+        } catch (err) {
+            if (err['message'].includes('ENTRY_EXISTS')) {
+                //TODO: This could be refactored to force the movement by deleting the user and then recreating with a different common name.
+                console.log(`Cannot move user from the Lander (${siteToOU['Lander']}) to appropriate OU.` +
+                    `Most common cause is that a user with an identical Common Name (${userCreated['cn']}) ` +
+                    `already exists in the target OU (${siteToOU[primarySite]})`);
+            } else {
+                console.log(`Error moving user from ${siteToOU['Lander']} to appropriate OU: `, err);
+            }
+        }
+
+        try {
+            //TODO: Handle failure
+            const canAuthenticate = await this.ad.user(userCreated['sAMAccountName']).authenticate(password);
+        } catch (err) {
+            console.log("Error Authenticating user: ", err);
         }
 
         userCreated['password'] = password;

@@ -36,8 +36,10 @@ describe('Mediator Object should construct without errors', function () {
         let ln = 'Squarepants';
         let t = 'Consultant';
         let st = 'Bellevue';
+        let mn = 'William Robert';
+        let suf = 'Sr.';
 
-        Mediator.createUser(fn, ln, t, st).then(
+        Mediator.createUser(fn, ln, mn, suf, t, st).then(
             (result) => {
                 result['givenName'].should.equal(fn);
                 result['sn'].should.equal(ln);

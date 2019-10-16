@@ -11,9 +11,13 @@ var validateRequestSchema = require('../bin/inputFilters').validateRequestSchema
 
 
 /* Verify that a username exists */
-router.post('/', validateRequestSchema(['firstName', 'lastName', 'title', 'site']), async (req, res, next) => {
+router.post('/',
+    validateRequestSchema(['firstName', 'lastName', 'middleNames', 'suffix', 'otherSites', 'employeeNumber', 'title', 'primarySite']),
+    async (req, res, next) => {
 
-    let result = await Mediator.createUser(req.body['firstName'], req.body['lastName'], req.body['title'], req.body['site']);
+        //firstName, lastName, middleNames, suffix, title, primarySite, otherSites = [], eNumber = 0
+        let result = await Mediator.createUser(req.body['firstName'], req.body['lastName'], req.body["middleNames"],
+            req.body["suffix"], req.body['title'], req.body['primarySite'], req.body['otherSites'], req.body['employeeNumber']);
     res.json(result);
 });
 

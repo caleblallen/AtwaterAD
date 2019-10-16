@@ -38,11 +38,20 @@ module.exports = {
         email,
         title,
         phone,
+        location,
         office,
-        location
+        description,
+        displayName,
+        initials,
+        webPage,
+        otherWebPage,
+        department,
+        company,
+        employeeNumber,
       } = opts;
 
       let { passwordExpires, enabled } = opts;
+
 
       if (commonName) {
         let cnParts = String(commonName).split(' ');
@@ -81,6 +90,14 @@ module.exports = {
         userPrincipalName: `${userName}@${this.config.domain}`,
         sAMAccountName: userName,
         physicalDeliveryOfficeName: office,
+        wWWHomePage: webPage,
+        description: description,
+        displayName: displayName,
+        initials: initials,
+        url: otherWebPage,
+        department: department,
+        company: company,
+        employeeNumber: employeeNumber,
         objectClass: this.config.defaults.userObjectClass,
         userPassword: ssha.create(password)
       };
