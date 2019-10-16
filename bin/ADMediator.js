@@ -1,10 +1,11 @@
 const config = require('config');
 
 const ldapConfig = config.get('Credentials.LDAP');
+
 class ADMediator {
 
     constructor() {
-        let ADModule = require('ad');
+        let ADModule = require('../bin/ad');
         this.ad = new ADModule({
             url: 'ldaps://' + ldapConfig.host,
             user: ldapConfig.username,
@@ -45,8 +46,28 @@ class ADMediator {
                 firstName: firstName,
                 lastName: lastName,
                 title: title,
-                location: siteToOU[site]
+                office: 'Bellevue',
+                location: 'AESD/AtwaterPeopleLander'
+                /*Adding users here to a lander and the moving them to their final destination in an separate operation.
+                * Pros:
+                *   1) Lowers likelihood of running into issues with duplicate Common Names.
+                *   2) Prevents rights from being granted to duplicate users until the matter has been resolved.
+                *   3) Ensures the account is created even if subsequent operations fail. (Maybe this should just be cleaned up???)
+                * Cons:
+                *   1) We have to engage in a separate move operation after creation.*/
             });
+
+            //TODO: Handle failure
+            const moveOperation = await this.ad.user(userCreated['sAMAccountName']).move(siteToOU[site]);
+
+            //TODO: Handle failure
+            const pwExpire = await this.ad.user(userCreated['sAMAccountName']).passwordNeverExpires();
+
+            //TODO: Handle failure
+            const enableUsr = await this.ad.user(userCreated['sAMAccountName']).enable();
+
+            //TODO: Handle failure
+            const canAuthenticate = await this.ad.user(userCreated['sAMAccountName']).authenticate(password);
 
         } catch (err) {
             console.log("Error in ADMediator.createUser: ", err);

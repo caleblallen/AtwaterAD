@@ -3,6 +3,23 @@ var Mediator = new ADM().getInstance();
 
 var should = require('chai').should();
 
+
+var colorTwister = (inputText) => {
+    let colors = ["\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m"];
+    let ret = "";
+    for (s in inputText) {
+        ret += "\x1b[40m" + colors[Math.floor(Math.random() * colors.length)] + inputText.charAt(s) + "\x1b[0m";
+    }
+
+
+    return ret;
+};
+
+
+console.log('\n');
+console.log(colorTwister('Mediator Tests'.padStart(35, '▀▄').padEnd(55, '▄▀')));
+console.log('\n');
+
 describe('Mediator Object should construct without errors', function () {
 
 
