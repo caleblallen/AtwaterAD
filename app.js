@@ -8,7 +8,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 const config = require('config');
 
-var shoggoth = require('./bin/shoggoth');
+var aesdLogger = require('./bin/aesdLogger');
 
 
 var indexRouter = require('./routes/index');
@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 /*app.use(expressWinston.logger({
     transport: [ winston.transports.MongoDB]
 }));*/
-app.use(new shoggoth().logger);
+app.use(new aesdLogger().getLogger());
 
 app.use('/', indexRouter);
 app.use('/userExists', userExistsRouter);
