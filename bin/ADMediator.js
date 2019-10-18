@@ -1,15 +1,13 @@
 const config = require('config');
 
-const ldapConfig = config.get('Credentials.LDAP');
-
 class ADMediator {
 
     constructor() {
         let ADModule = require('../bin/ad');
         this.ad = new ADModule({
-            url: 'ldaps://' + ldapConfig.host,
-            user: ldapConfig.username,
-            pass: ldapConfig.password,
+            url: 'ldaps://' + config.LDAP.host,
+            user: config.LDAP.username,
+            pass: config.LDAP.password,
         });
 
     }
@@ -134,6 +132,8 @@ class ADMediator {
     }
 }
 
+
+//TODO: Refactor? If loaded as module it should be singleton anyway.
 class Singleton {
 
     constructor() {

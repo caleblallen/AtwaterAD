@@ -4,19 +4,19 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "test": "nodemon --exec mocha -R spec"
+    "test": "set NODE_ENV=test&& nodemon --exec mocha -R spec"
   },
   "dependencies": {
     "activedirectory": "^0.7.2",
-    "ad": "^0.3.2",
     "config": "^3.2.3",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "^4.16.4",
     "ldapjs": "^1.0.2",
     "lodash.orderby": "^4.6.0",
-    "morgan": "~1.9.1",
-    "node-ssha256": "^0.1.1"
+    "mongoose": "^5.7.5",
+    "node-ssha256": "^0.1.1",
+    "saslprep": "^1.0.3"
   },
   "devDependencies": {
     "@types/chai-http": "^4.2.0",
