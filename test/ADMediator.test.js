@@ -88,13 +88,15 @@ describe('Mediator Object should construct without errors', function () {
             });
         });
     });
-    /*    it('Mediator should add a user to groups array', (done) => {
+    it('Mediator should add a user to groups array', (done) => {
             let fn = 'Spongebob';
-            let ln = 'Squarepants';
+        let ln = 'Ovalbreeches';
             let t = 'Consultant';
             let st = 'Bellevue';
             let mn = 'William Robert';
             let suf = 'Sr.';
+
+        let uid = '';
 
             Mediator.createUser(fn, ln, mn, suf, t, st).then(
                 (result) => {
@@ -103,17 +105,102 @@ describe('Mediator Object should construct without errors', function () {
                     result['title'].should.equal(t);
                     result['canAuthenticate'].should.equal(true);
                     result['moveSuccessful'].should.equal(true);
-                    return result['uid'];
+                    uid = result['uid'];
                 }
-            ).then( (uid) => {
-                let getGroupsStub = sinon.stub(Mediator,'getUserGroups').returns(["WiFi-Allowed", "AESD Staff", "Domain Users","SARB Members"]);
+            ).then(() => {
+                return new Promise((resolve, reject) => {
+                    Mediator.addUserToGroup(uid, 'WiFi-Allowed').then((result) => {
+                        result.should.be.equal(true);
+                        resolve(true);
+                    }).catch((err) => {
+                        console.log(err.message);
+                        resolve(false)
+                    })
+                })
+            }).then((grpWasAdded) => {
+                if (grpWasAdded) {
+                    return new Promise((resolve, reject) => {
+                        Mediator.isUserMemberOf(uid, 'WiFi-Allowed').then((result) => {
+                            result.should.equal(true);
+                            resolve(true);
 
-
-            }).then((uid) => {
+                        })
+                    })
+                } else {
+                    return new Promise((resolve, reject) => {
+                        resolve(false);
+                    })
+                }
+            }).finally((success) => {
+                console.log("UID = ", uid);
                 Mediator.deleteUser(uid).then((res) => {
                     res['success'].should.be.equal(true);
                     done();
                 })
             });
-        });*/
+    });
+    it('Mediator should add a user to groups array', (done) => {
+        let fn = 'Spongebob';
+        let ln = 'Ovalbreeches';
+        let t = 'Consultant';
+        let st = 'Bellevue';
+        let mn = 'William Robert';
+        let suf = 'Sr.';
+
+        let uid = '';
+
+        Mediator.createUser(fn, ln, mn, suf, t, st).then(
+            (result) => {
+                result['givenName'].should.equal(fn);
+                result['sn'].should.equal(ln);
+                result['title'].should.equal(t);
+                result['canAuthenticate'].should.equal(true);
+                result['moveSuccessful'].should.equal(true);
+                uid = result['uid'];
+            }
+        ).then(() => {
+            return new Promise((resolve, reject) => {
+                Mediator.addUserToGroup(uid, 'WiFi-Allowed').then((result) => {
+                    result.should.be.equal(true);
+                    resolve(true);
+                }).catch((err) => {
+                    console.log(err.message);
+                    resolve(false)
+                })
+            })
+        }).then((grpWasAdded) => {
+            if (grpWasAdded) {
+                return new Promise((resolve, reject) => {
+                    Mediator.isUserMemberOf(uid, 'WiFi-Allowed').then((result) => {
+                        result.should.equal(true);
+                        resolve(true);
+
+                    })
+                })
+            } else {
+                return new Promise((resolve, reject) => {
+                    resolve(false);
+                })
+            }
+        }).then((grpWasAdded) => {
+            if (grpWasAdded) {
+                return new Promise((resolve, reject) => {
+                    Mediator.isUserMemberOf(uid, 'Domain Admins').then((result) => {
+                        result.should.equal(false);
+                        resolve(true);
+                    })
+                })
+            } else {
+                return new Promise((resolve, reject) => {
+                    resolve(false);
+                })
+            }
+        }).finally((success) => {
+            console.log("UID = ", uid);
+            Mediator.deleteUser(uid).then((res) => {
+                res['success'].should.be.equal(true);
+                done();
+            })
+        });
+    });
 });

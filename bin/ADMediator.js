@@ -1,4 +1,6 @@
 const config = require('config');
+const NodeCache = require('node-cache');
+
 
 class ADMediator {
 
@@ -9,6 +11,9 @@ class ADMediator {
             user: config.LDAP.username,
             pass: config.LDAP.password,
         });
+
+        this.groupCache = new NodeCache();
+        this.userCache = new NodeCache();
 
     }
 
@@ -129,6 +134,27 @@ class ADMediator {
 
     async deleteUser(username) {
         return await this.ad.user(username).remove();
+    }
+
+    async getUserGroups(username) {
+        try {
+            return await this.ad.user(username).get({fields: ['groups']});
+        } catch (err) {
+            console.log('Error querying user groups', err.message);
+        }
+    }
+
+    async isUserMemberOf(username, group) {
+        return this.ad.user(username).isMemberOf(group);
+    }
+
+    async addUserToGroup(username, group) {
+        try {
+            await this.ad.user(username).addToGroup(group);
+            return await this.ad.user(username).isMemberOf(group);
+        } catch (err) {
+            console.log(`An error occured while trying to add the user ${username} to group ${group}: `, err.message);
+        }
     }
 
 }
