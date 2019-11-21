@@ -1,19 +1,10 @@
 var ADM = require('../bin/ADMediator');
 var Mediator = new ADM().getInstance();
-
+let colorTwister = require('./colorTwister');
 var should = require('chai').should();
+const sinon = require('sinon');
 
 
-var colorTwister = (inputText) => {
-    let colors = ["\x1b[32m", "\x1b[33m", "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m"];
-    let ret = "";
-    for (s in inputText) {
-        ret += "\x1b[40m" + colors[Math.floor(Math.random() * colors.length)] + inputText.charAt(s) + "\x1b[0m";
-    }
-
-
-    return ret;
-};
 
 
 console.log('\n');
@@ -96,5 +87,33 @@ describe('Mediator Object should construct without errors', function () {
                 })
             });
         });
-    })
+    });
+    /*    it('Mediator should add a user to groups array', (done) => {
+            let fn = 'Spongebob';
+            let ln = 'Squarepants';
+            let t = 'Consultant';
+            let st = 'Bellevue';
+            let mn = 'William Robert';
+            let suf = 'Sr.';
+
+            Mediator.createUser(fn, ln, mn, suf, t, st).then(
+                (result) => {
+                    result['givenName'].should.equal(fn);
+                    result['sn'].should.equal(ln);
+                    result['title'].should.equal(t);
+                    result['canAuthenticate'].should.equal(true);
+                    result['moveSuccessful'].should.equal(true);
+                    return result['uid'];
+                }
+            ).then( (uid) => {
+                let getGroupsStub = sinon.stub(Mediator,'getUserGroups').returns(["WiFi-Allowed", "AESD Staff", "Domain Users","SARB Members"]);
+
+
+            }).then((uid) => {
+                Mediator.deleteUser(uid).then((res) => {
+                    res['success'].should.be.equal(true);
+                    done();
+                })
+            });
+        });*/
 });

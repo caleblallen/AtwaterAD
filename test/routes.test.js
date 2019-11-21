@@ -2,19 +2,20 @@ const request = require('supertest');
 const server = require('../bin/www'); //Keeps the Server running after tests.
 const app = require('../app');
 var should = require('chai').should();
+let colorTwister = require('./colorTwister');
+
 
 
 describe('Root Connectivity Test', function () {
 
 
-    /*
+
             // add a test hook
             before(function() {
                 console.log('\n');
-                console.log('Running Route Tests'.padStart(35, '╤═╧═').padEnd(55, '═╧═╤'));
+                console.log(colorTwister('Running Route Tests'.padStart(35, '╤═╧═').padEnd(55, '═╧═╤')));
                 console.log('\n');
             });
-    */
 
 
     it('The Server should Respond to GET Requests to the Root Directory.', function (done) {

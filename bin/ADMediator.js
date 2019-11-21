@@ -130,10 +130,9 @@ class ADMediator {
     async deleteUser(username) {
         return await this.ad.user(username).remove();
     }
+
 }
 
-
-//TODO: Refactor? If loaded as module it should be singleton anyway.
 class Singleton {
 
     constructor() {
