@@ -1,6 +1,4 @@
 const config = require('config');
-const NodeCache = require('node-cache');
-
 
 class ADMediator {
 
@@ -11,10 +9,6 @@ class ADMediator {
             user: config.LDAP.username,
             pass: config.LDAP.password,
         });
-
-        this.groupCache = new NodeCache();
-        this.userCache = new NodeCache();
-
     }
 
     async userExists(username) {
