@@ -13,7 +13,7 @@ class Grouper {
 
     // Preferred Method for pulling the list of user groups.
     getGroups() {
-        if ( this.needsSite ) {
+        if ( this.site === null ) {
             console.warn( `WARNING: The job title ${ this.title } expects a school site to be set. 
             Groups returned will not include the appropriate school site groups.` );
         }
@@ -48,7 +48,34 @@ class Grouper {
     setTitle( jobTitle ) {
 
         this.title = jobTitle;
-        this.addGroupsForTitle( jobTitle );
+
+        console.log( `======Job Title: ${ this.title }` );
+
+        if ( !Array.isArray( this.title ) ) {
+            if ( config.has( `Aliases.${ jobTitle }` ) ) {
+
+                let deAliasedTitle = config.get( `Aliases.${ jobTitle }` );
+                console.warn( `Job Title Alias Detected. Resetting ${ jobTitle } to ${ deAliasedTitle }` );
+
+                if ( deAliasedTitle.includes( '.' ) ) {
+                    this.setTitle( deAliasedTitle.split( '.' ) );
+                } else {
+                    this.setTitle( deAliasedTitle );
+                }
+            } else {
+                this.addGroupsForTitle( jobTitle );
+            }
+        } else {
+            // console.log( config.has( `Aliases.${ jobTitle[0] }` ) );
+            // console.log( config.get( `Aliases.${ jobTitle[0] }` ).split('.').concat(jobTitle.slice(1)) );
+            if ( config.has( `Aliases.${ jobTitle[0] }` ) ) {
+                this.setTitle( config.get( `Aliases.${ jobTitle[0] }` ).split( '.' ).concat( jobTitle.slice( 1 ) ) );
+            } else {
+                this.addGroupsForTitle( jobTitle );
+
+            }
+        }
+
     }
 
     getTitle( joinChar = ' ' ) {
@@ -63,9 +90,8 @@ class Grouper {
     addGroupsForTitle( jobTitle ) {
         if ( Array.isArray( jobTitle ) ) {
             // Handle Complicated Templates
-            jobTitle = jobTitle.map( ( item ) => {
-                return item.replace( ' ', '' );
-            } ).join( '.' );
+            jobTitle = jobTitle.join( '.' );
+            console.log( jobTitle );
         }
 
         if ( typeof ( jobTitle ) === 'string' ) {
@@ -93,12 +119,16 @@ class Grouper {
                     }
                 }
             } else {
-                console.warn( `Warning: This system is unaware of the ${ this.title } job title.
-                No template to apply.` )
+                if ( config.has( `Aliases.${ jobTitle }` ) ) {
+                    this.addGroupsForTitle( config.get( `Aliases.${ jobTitle }` ) );
+                } else {
+                    console.warn( `Warning: This system is unaware of the ${ this.title } job title.
+                    No template to apply.` );
+                }
+
             }
         } else {
 
-            // TODO: Test for Aliases
 
             throw `Grouper.setTitle() invalid input. Got ${ typeof ( jobTitle ) }. Expected string or array.`
         }
