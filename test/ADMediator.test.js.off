@@ -13,15 +13,6 @@ console.log('\n');
 
 describe('Mediator Object should construct without errors', function () {
 
-
-    /*        // add a test hook
-            before( () => {
-                console.log('\n');
-                console.log('Mediator Tests'.padStart(35, '▀▄').padEnd(55, '▄▀'));
-                console.log('\n');
-            });*/
-
-
     it('Mediator should create and delete users without error.', (done) => {
         let fn = 'Spongebob';
         let ln = 'Squarepants';

@@ -1,29 +1,33 @@
-const config = require('config');
+const config = require( 'config' );
+const utilities = require( './Utilities' );
 
 class ADMediator {
 
     constructor() {
-        let ADModule = require('../bin/ad');
-        this.ad = new ADModule({
+        let ADModule = require( '../bin/ad' );
+        this.ad = new ADModule( {
             url: 'ldaps://' + config.LDAP.host,
             user: config.LDAP.username,
             pass: config.LDAP.password,
-        });
+        } );
+        this.util = new utilities().getInstance();
     }
 
-    async userExists(username) {
-        return await this.ad.user(username).exists();
+    async userExists( username ) {
+        return await this.ad.user( username ).exists();
     }
 
-    async createUser(firstName, lastName, middleNames, suffix, title, primarySite, otherSites = [], eNumber = 0) {
+    async createUser( firstName, lastName, middleNames, suffix, title, primarySite,
+                      otherSites = [], eNumber = 0, password = null ) {
+
         //Pull our Site to OU Mapping from the Default Configuration
-        let siteToOU = config.get('Templates.SiteToOU');
+        let siteToOU = config.get( 'SiteToOU' );
 
         //Create a username following AESD Policies
-        let uName = await this.generateUsername(firstName, lastName);
+        let uName = await this.generateUsername( firstName, lastName );
 
-        if (uName === null) {
-            throw `No applicable username available for ${firstName} ${lastName}`;
+        if ( uName === null ) {
+            throw `No applicable username available for ${ firstName } ${ lastName }`;
         }
 
 
@@ -40,23 +44,23 @@ class ADMediator {
             }, "");
         }
 
-        let password = this.generatePassword(firstName, lastName);
+        let pass = ( password === null ) ? this.util.generatePassword( firstName, lastName ) : password;
 
         try {
             /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU The process will bug out. Implement Checking.*/
-            userCreated = await this.ad.user().add({
+            userCreated = await this.ad.user().add( {
                 userName: uName,
-                password: password,
-                commonName: `${firstName} ${lastName}`,
+                password: pass,
+                commonName: `${ firstName } ${ lastName }`,
                 firstName: firstName,
                 lastName: lastName,
                 title: title,
-                office: (otherSites.length > 0) ? primarySite + " " + otherSites.join(' ') : primarySite,
+                office: ( otherSites.length > 0 ) ? primarySite + " " + otherSites.join( ' ' ) : primarySite,
                 description: title,
-                displayName: `${firstName} ${middleNames} ${lastName} ${suffix}`,
-                initials: `${firstName.charAt(0)}${middleInitials}${lastName.charAt(0)}`,
+                displayName: `${ firstName } ${ middleNames } ${ lastName } ${ suffix }`,
+                initials: `${ firstName.charAt( 0 ) }${ middleInitials }${ lastName.charAt( 0 ) }`,
                 department: primarySite,
-                company: config.get('Templates.CompanyName'),
+                company: config.get( 'CompanyName' ),
                 employeeNumber: eNumber,
                 location: siteToOU['Lander'],
                 passwordExpires: false,
@@ -89,20 +93,16 @@ class ADMediator {
         userCreated['canAuthenticate'] = false;
         try {
             //TODO: Handle failure
-            userCreated['canAuthenticate'] = await usr.authenticate(password);
+            userCreated['canAuthenticate'] = await usr.authenticate( pass );
         } catch (err) {
             console.log("Error Authenticating user: ", err);
         }
 
         userCreated['moveSuccessful'] = moveOperation['success'];
-        userCreated['password'] = password;
+        userCreated['password'] = pass;
         return userCreated;
     }
 
-    generatePassword(firstName, lastName) {
-        return firstName.substr(0, 2) + lastName.substr(0, 2) +
-            Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    }
 
     async generateUsername(firstName, lastName) {
         //TODO: verify that names contain only letters and hyphens.
