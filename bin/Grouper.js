@@ -4,8 +4,8 @@ const utilities = require( './Utilities' );
 class Grouper {
     constructor() {
         this.title = null;
-        this.dept = null;
-        this.groups = [];
+        this.dept = [];
+        this.groups = new Set();
         this.site = null;
 
         this.util = new utilities().getInstance();
@@ -13,44 +13,12 @@ class Grouper {
 
     // Preferred Method for pulling the list of user groups.
     getGroups() {
-        if ( this.site === null ) {
-            console.warn( `WARNING: The job title ${ this.title } expects a school site to be set. 
-            Groups returned will not include the appropriate school site groups.` );
-        }
-
-        return this.groups;
-    }
-
-    setSite( site ) {
-        this.site = site;
-        this.addGroupsForSite();
-        return true;
-    }
-
-    addGroupsForSite() {
-        if ( this.site === null ) {
-            return false;
-        } else {
-            let siteKey = this.site.replace( ' ', '' );
-            // Add Site Packages, if available.
-            if ( config.has( `JobTitles.${ this.getTitle( '.' ) }` ) && config.get( `GroupPackages.Sites` ).hasOwnProperty( siteKey ) ) {
-                if ( config.get( `JobTitles.${ this.getTitle( '.' ) }.Departments` ).includes( "SchoolSite" ) ) {
-                    this.groups = this.groups.concat( config.get( `GroupPackages.Sites.${ siteKey }` ) );
-                    return true;
-                }
-            } else {
-                console.warn( `Warning: Grouper.addGroupsForSite() No configuration for site ${ this.site }` );
-                return false;
-            }
-        }
+        return [ ...this.groups ];
     }
 
     setTitle( jobTitle ) {
 
         this.title = jobTitle;
-
-        console.log( `======Job Title: ${ this.title }` );
-
         if ( !Array.isArray( this.title ) ) {
             if ( config.has( `Aliases.${ jobTitle }` ) ) {
 
@@ -66,8 +34,6 @@ class Grouper {
                 this.addGroupsForTitle( jobTitle );
             }
         } else {
-            // console.log( config.has( `Aliases.${ jobTitle[0] }` ) );
-            // console.log( config.get( `Aliases.${ jobTitle[0] }` ).split('.').concat(jobTitle.slice(1)) );
             if ( config.has( `Aliases.${ jobTitle[0] }` ) ) {
                 this.setTitle( config.get( `Aliases.${ jobTitle[0] }` ).split( '.' ).concat( jobTitle.slice( 1 ) ) );
             } else {
@@ -78,6 +44,13 @@ class Grouper {
 
     }
 
+    setSite( site, force = false ) {
+
+        this.site = site;
+        this.addGroupsForSite( force );
+        return true;
+    }
+
     getTitle( joinChar = ' ' ) {
         if ( Array.isArray( this.title ) ) {
             return this.title.join( joinChar );
@@ -86,12 +59,34 @@ class Grouper {
         }
     }
 
+    addGroupsForSite( force ) {
+        if ( this.site === null ) {
+            return false;
+        } else {
+            let siteKey = this.site.replace( ' ', '' );
+            // Add Site Packages, if available.
+
+            // TODO: Refactor for cleaner flow. If statements can be consolidated.
+            if ( config.has( `JobTitles.${ this.getTitle( '.' ) }` ) &&
+                config.get( `GroupPackages.Sites` ).hasOwnProperty( siteKey ) ) {
+                if ( config.get( `JobTitles.${ this.getTitle( '.' ) }.Departments` ).includes( "SchoolSite" ) ) {
+                    config.get( `GroupPackages.Sites.${ siteKey }` ).forEach( i => this.groups.add( i ) );
+                }
+            } else if ( force && config.get( `GroupPackages.Sites` ).hasOwnProperty( siteKey ) ) {
+                config.get( `GroupPackages.Sites.${ siteKey }` ).forEach( i => this.groups.add( i ) );
+
+            } else {
+                console.warn( `Warning: Grouper.addGroupsForSite() No configuration for site ${ this.site }` );
+                return false;
+            }
+            return true;
+        }
+    }
 
     addGroupsForTitle( jobTitle ) {
         if ( Array.isArray( jobTitle ) ) {
             // Handle Complicated Templates
             jobTitle = jobTitle.join( '.' );
-            console.log( jobTitle );
         }
 
         if ( typeof ( jobTitle ) === 'string' ) {
@@ -101,11 +96,11 @@ class Grouper {
                 let template = config.get( `JobTitles.${ jobTitle }` );
 
                 // Add flat groups.
-                this.groups = this.groups.concat( template.Groups );
+                template.Groups.forEach( i => this.groups.add( i ) );
 
                 // Add groups related to job duties.
                 for ( let p of template.Packages ) {
-                    this.groups = this.groups.concat( config.get( `GroupPackages.${ p }` ) );
+                    config.get( `GroupPackages.${ p }` ).forEach( i => this.groups.add( i ) );
                 }
 
                 // Add groups related to the job's department.
@@ -115,7 +110,7 @@ class Grouper {
                     if ( d === 'SchoolSite' ) {
                         this.addGroupsForSite();
                     } else {
-                        this.groups = this.groups.concat( config.get( `GroupPackages.Departments.${ d }` ) );
+                        config.get( `GroupPackages.Departments.${ d }` ).forEach( i => this.groups.add( i ) );
                     }
                 }
             } else {
@@ -133,6 +128,53 @@ class Grouper {
             throw `Grouper.setTitle() invalid input. Got ${ typeof ( jobTitle ) }. Expected string or array.`
         }
     }
+
+    addDepartment( department ) {
+        if ( Array.isArray( department ) ) {
+            for ( let d of department ) {
+                this.addDepartment( d );
+            }
+        } else {
+            this.addGroupsForDepartment( department );
+        }
+    }
+
+    addGroupsForDepartment( department ) {
+        if ( !config.has( `GroupPackages.Departments.${ department }` ) ) {
+            console.warn( `Warning: Invalid Department ${ department }` );
+        } else {
+            config.get( `GroupPackages.Departments.${ department }` ).forEach( i => this.groups.add( i ) );
+        }
+    }
+
+    addGroupForPackages( packages ) {
+        let pack = packages;
+        if ( !Array.isArray( packages ) ) {
+            pack = [ packages ];
+        }
+
+        for ( let p of pack ) {
+            if ( config.has( `GroupPackages.${ packages }` ) ) {
+                config.get( `GroupPackages.${ packages }` ).forEach( i => this.groups.add( i ) );
+            }
+        }
+    }
+
+    addGroupByName( name ) {
+        this.groups.add( name );
+    }
+
+
+    /*    build() {
+            return {
+              title: this.title,
+              department: (() => {
+                  return this.dept.join(', ');
+              })(),
+
+            };
+        }*/
+
 }
 
 module.exports = Grouper;

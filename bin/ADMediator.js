@@ -18,7 +18,7 @@ class ADMediator {
     }
 
     async createUser( firstName, lastName, middleNames, suffix, title, primarySite,
-                      otherSites = [], eNumber = 0, password = null ) {
+                      otherSites = [], password = null, eNumber = 0 ) {
 
         //Pull our Site to OU Mapping from the Default Configuration
         let siteToOU = config.get( 'SiteToOU' );
@@ -43,6 +43,7 @@ class ADMediator {
                 return collector + currentName.charAt(0)
             }, "");
         }
+
 
         let pass = ( password === null ) ? this.util.generatePassword( firstName, lastName ) : password;
 

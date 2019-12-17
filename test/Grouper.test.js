@@ -4,11 +4,15 @@ var should = require( 'chai' ).should();
 const sinon = require( 'sinon' );
 
 
-console.log( '\n' );
-console.log( colorTwister( 'Grouper Tests'.padStart( 35, ' ▀█▄' ).padEnd( 55, '▄█▀ ' ) ) );
-console.log( '\n' );
+
 
 describe( 'Grouper Object should correctly parse user groups for job description', function () {
+
+    before( () => {
+        console.log( '\n' );
+        console.log( colorTwister( 'Grouper Tests'.padStart( 35, ' ▀█▄' ).padEnd( 55, '▄█▀ ' ) ) );
+        console.log( '\n' );
+    } );
 
     it( 'Grouper should construct a user with basic information', ( done ) => {
         let grpr = new Grouper();
@@ -60,4 +64,52 @@ describe( 'Grouper Object should correctly parse user groups for job description
         done();
     } );
 
+    it( 'Grouper should function even without a known job title.', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [] );
+        done();
+    } );
+
+
+    it( 'Grouper should add site with force flag', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.setSite( 'Thomas Olaeta', true );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "Thomas Olaeta Staff" ] );
+        done();
+    } );
+
+
+    it( 'Grouper should add groups for appropriate departments', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.addDepartment( 'Support Services' );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "Support Services Staff" ] );
+        done();
+    } );
+
+    it( 'Grouper should add groups for multiple departments', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.addDepartment( [ 'Support Services', 'Maintenance' ] );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "All Maintenance Workers", "Support Services Staff" ] );
+        done();
+    } );
+
+    it( 'Grouper should add group packages', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.addGroupForPackages( 'AllUsers' );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "WiFi-Allowed", "AESD Staff", "Domain Users" ] );
+        done();
+    } );
+
+    it( 'Grouper should allow for manually assigned group assignation', ( done ) => {
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.addGroupByName( 'AESD Staff' );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "AESD Staff" ] );
+        done();
+    } );
 } );
