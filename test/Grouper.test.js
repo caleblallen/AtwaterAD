@@ -53,6 +53,7 @@ describe( 'Grouper Object should correctly parse user groups for job description
         let grpr = new Grouper();
         grpr.setTitle( [ 'ELA', 'Eighth Grade' ] );
         grpr.setSite( 'Thomas Olaeta' );
+
         grpr.getGroups().should.be.an( 'array' ).with.members( [ "WiFi-Allowed", "AESD Staff", "Domain Users",
             "All AESD 8th ELA Teachers", "All AESD 7-8th-Grade Teachers",
             "ALL AESD Teachers", "All Aeries Users", "Thomas Olaeta Staff" ] );
