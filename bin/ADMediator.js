@@ -17,52 +17,44 @@ class ADMediator {
         return await this.ad.user( username ).exists();
     }
 
-    async createUser( firstName, lastName, middleNames, suffix, title, primarySite,
-                      otherSites = [], password = null, eNumber = 0 ) {
+    async createUser( opts ) {
 
+        let {
+            username,
+            password,
+            firstName,
+            lastName,
+            commonName,
+            title,
+            office,
+            primarySite,
+            description,
+            displayName,
+            initials,
+            department,
+            company,
+        } = opts;
         //Pull our Site to OU Mapping from the Default Configuration
         let siteToOU = config.get( 'SiteToOU' );
-
-        //Create a username following AESD Policies
-        let uName = await this.generateUsername( firstName, lastName );
-
-        if ( uName === null ) {
-            throw `No applicable username available for ${ firstName } ${ lastName }`;
-        }
-
 
         //Initialize return object
         let userCreated = {};
 
-        //Collector for middle initials
-        let middleInitials = "";
-
-        //Extract middle initials.
-        if (middleNames.length > 0) {
-            middleInitials = middleNames.split(' ').reduce((collector, currentName) => {
-                return collector + currentName.charAt(0)
-            }, "");
-        }
-
-
-        let pass = ( password === null ) ? this.util.generatePassword( firstName, lastName ) : password;
-
         try {
             /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU The process will bug out. Implement Checking.*/
             userCreated = await this.ad.user().add( {
-                userName: uName,
-                password: pass,
-                commonName: `${ firstName } ${ lastName }`,
+                userName: username,
+                password: password,
+                commonName: commonName,
                 firstName: firstName,
                 lastName: lastName,
                 title: title,
-                office: ( otherSites.length > 0 ) ? primarySite + " " + otherSites.join( ' ' ) : primarySite,
-                description: title,
-                displayName: `${ firstName } ${ middleNames } ${ lastName } ${ suffix }`,
-                initials: `${ firstName.charAt( 0 ) }${ middleInitials }${ lastName.charAt( 0 ) }`,
-                department: primarySite,
-                company: config.get( 'CompanyName' ),
-                employeeNumber: eNumber,
+                office: office,
+                description: description,
+                displayName: displayName,
+                initials: initials,
+                department: department,
+                company: company,
                 location: siteToOU['Lander'],
                 passwordExpires: false,
             });
@@ -71,14 +63,14 @@ class ADMediator {
         }
 
         //Extract a function set for the user we just created.
-        let usr = this.ad.user(userCreated['sAMAccountName']);
+        let usr = this.ad.user( userCreated['sAMAccountName'] );
 
         //Initialize collector for moveOperation status.
         let moveOperation = {success: false};
 
         try {
             //Attempt to move user from the Lander to the appropriate OU
-            moveOperation = await usr.move(siteToOU[primarySite]);
+            moveOperation = await usr.move( siteToOU[primarySite] );
         } catch (err) {
             if (err['message'].includes('ENTRY_EXISTS')) {
                 //TODO: This could be refactored to force the movement by deleting the user and then recreating with a different common name.
@@ -94,13 +86,13 @@ class ADMediator {
         userCreated['canAuthenticate'] = false;
         try {
             //TODO: Handle failure
-            userCreated['canAuthenticate'] = await usr.authenticate( pass );
+            userCreated['canAuthenticate'] = await usr.authenticate( password );
         } catch (err) {
             console.log("Error Authenticating user: ", err);
         }
 
         userCreated['moveSuccessful'] = moveOperation['success'];
-        userCreated['password'] = pass;
+        userCreated['password'] = password;
         return userCreated;
     }
 

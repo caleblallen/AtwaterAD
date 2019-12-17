@@ -46,9 +46,15 @@ class Grouper {
 
     setSite( site, force = false ) {
 
-        this.site = site;
-        this.addGroupsForSite( force );
-        return true;
+        if ( this.site === null ) {
+            this.site = site;
+        }
+
+        if ( Array.isArray( site ) ) {
+            site.forEach( s => this.setSite( s, force ) );
+        } else {
+            this.addGroupsForSite( site, force );
+        }
     }
 
     getTitle( joinChar = ' ' ) {
@@ -59,11 +65,11 @@ class Grouper {
         }
     }
 
-    addGroupsForSite( force ) {
-        if ( this.site === null ) {
+    addGroupsForSite( site, force ) {
+        if ( site === null ) {
             return false;
         } else {
-            let siteKey = this.site.replace( ' ', '' );
+            let siteKey = site.replace( ' ', '' );
             // Add Site Packages, if available.
 
             // TODO: Refactor for cleaner flow. If statements can be consolidated.
@@ -76,7 +82,7 @@ class Grouper {
                 config.get( `GroupPackages.Sites.${ siteKey }` ).forEach( i => this.groups.add( i ) );
 
             } else {
-                console.warn( `Warning: Grouper.addGroupsForSite() No configuration for site ${ this.site }` );
+                console.warn( `Warning: Grouper.addGroupsForSite() No configuration for site ${ site }` );
                 return false;
             }
             return true;
@@ -108,7 +114,7 @@ class Grouper {
 
                     // SchoolSite is special because there are 8 options and each has a different set.
                     if ( d === 'SchoolSite' ) {
-                        this.addGroupsForSite();
+                        this.addGroupsForSite( this.site );
                     } else {
                         config.get( `GroupPackages.Departments.${ d }` ).forEach( i => this.groups.add( i ) );
                     }

@@ -112,4 +112,13 @@ describe( 'Grouper Object should correctly parse user groups for job description
         grpr.getGroups().should.be.an( 'array' ).with.members( [ "AESD Staff" ] );
         done();
     } );
+
+    it( 'Grouper should handle multiple sites', ( done ) => {
+
+        let grpr = new Grouper();
+        grpr.setTitle( 'Plumbus Harvester' );
+        grpr.setSite( [ 'Thomas Olaeta', 'District Office' ], true );
+        grpr.getGroups().should.be.an( 'array' ).with.members( [ "AllDOStaff", "District Office Staff", "Thomas Olaeta Staff" ] );
+        done();
+    } );
 } );
