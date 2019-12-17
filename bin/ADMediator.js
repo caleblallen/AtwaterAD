@@ -104,6 +104,7 @@ class ADMediator {
             let uName = firstName.substr(0, fnIndex) + lastName;
             let isTaken = true;
             try {
+
                 isTaken = await this.ad.user(uName).exists();
             } catch (err) {
                 console.log('ADMediator.generateUsername. Error checking for username existance.', err);
