@@ -1,6 +1,7 @@
 const config = require( 'config' );
 const utilities = require( './Utilities' );
 
+
 class ADMediator {
 
     constructor() {
@@ -33,6 +34,7 @@ class ADMediator {
             initials,
             department,
             company,
+            groups
         } = opts;
         //Pull our Site to OU Mapping from the Default Configuration
         let siteToOU = config.get( 'SiteToOU' );
@@ -97,28 +99,6 @@ class ADMediator {
     }
 
 
-    async generateUsername(firstName, lastName) {
-        //TODO: verify that names contain only letters and hyphens.
-        let fnIndex = 1;
-        while (fnIndex < firstName.length) {
-            let uName = firstName.substr(0, fnIndex) + lastName;
-            let isTaken = true;
-            try {
-
-                isTaken = await this.ad.user(uName).exists();
-            } catch (err) {
-                console.log('ADMediator.generateUsername. Error checking for username existance.', err);
-            }
-
-            if (!isTaken) {
-                return uName;
-            } else {
-                fnIndex++;
-            }
-        }
-
-        return null;
-    }
 
     async deleteUser(username) {
         return await this.ad.user(username).remove();

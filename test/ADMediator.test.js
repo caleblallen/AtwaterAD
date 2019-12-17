@@ -30,6 +30,7 @@ describe('Mediator Object should construct without errors', function () {
             initials: 'SS',
             department: 'Bellevue Support Services',
             company: 'Atwater Elementary School District',
+            groups: [ 'Wi-Fi Allowed', 'Thomas Olaeta Staff' ]
         };
 
         Mediator.createUser( opts ).then(
@@ -64,6 +65,7 @@ describe('Mediator Object should construct without errors', function () {
             initials: 'SS',
             department: 'Bellevue Support Services',
             company: 'Atwater Elementary School District',
+            groups: [ 'Wi-Fi Allowed', 'Thomas Olaeta Staff' ]
         };
 
         let uid;

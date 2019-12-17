@@ -1,19 +1,22 @@
 const utilities = require( './Utilities' );
 const grpr = require( './Grouper' );
 const config = require( 'config' );
+const adm = require( '../bin/ADMediator' );
 
 class UserBuilder {
 
     constructor() {
+        this.mediator = new adm().getInstance();
         this.util = new utilities().getInstance();
         this.grouper = new grpr();
+
         this.firstName = null;
         this.lastName = null;
         this.middleName = null;
         this.commonName = null;
         this.initials = null;
         this.displayName = null;
-        this.userName = null;
+        this.username = null;
         this.password = null;
         this.title = null;
         this.description = null;
@@ -79,6 +82,55 @@ class UserBuilder {
             this.departments = ( this.departments === null ) ? [ dept ] : [ ...this.departments, dept ];
         }
 
+    }
+
+    async generateUsername() {
+        //TODO: verify that names contain only letters and hyphens.
+        let fnIndex = 1;
+        while ( fnIndex < this.firstName.length ) {
+            let uName = this.firstName.substr( 0, fnIndex ) + this.lastName;
+            let isTaken = true;
+            try {
+                isTaken = await this.mediator.userExists( uName );
+            } catch ( err ) {
+                console.log( 'ADMediator.generateUsername. Error checking for username existence.', err );
+            }
+
+            if ( !isTaken ) {
+                return uName;
+            } else {
+                fnIndex++;
+            }
+        }
+
+        return null;
+    }
+
+    async build() {
+        return await ( async () => {
+            try {
+                let ret = {
+                    username: await this.generateUsername(),
+                    password: this.password,
+                    firstName: this.firstName,
+                    lastName: this.lastName,
+                    commonName: this.commonName,
+                    title: this.title,
+                    office: this.office,
+                    primarySite: this.primarySite,
+                    description: this.description,
+                    displayName: this.displayName,
+                    initials: this.initials,
+                    department: this.departments.join( ', ' ),
+                    company: this.company,
+                    groups: this.grouper.getGroups()
+                };
+                return ret;
+            } catch ( e ) {
+                console.log( e.message );
+                return null;
+            }
+        } )();
     }
 
 
