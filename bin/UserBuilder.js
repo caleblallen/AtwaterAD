@@ -1,6 +1,6 @@
+const config = require( 'config' );
 const utilities = require( './Utilities' );
 const grpr = require( './Grouper' );
-const config = require( 'config' );
 const adm = require( '../bin/ADMediator' );
 
 class UserBuilder {
@@ -53,8 +53,9 @@ class UserBuilder {
     }
 
     addTitle( title ) {
-        this.description = this.title = title;
         this.grouper.setTitle( title );
+        // We use grouper here because it has the logic for de-aliasing a job title.
+        this.description = this.title = this.grouper.getTitle();
     }
 
     addSite( site ) {
@@ -73,13 +74,13 @@ class UserBuilder {
 
     }
 
-
     addDepartments( dept ) {
 
         if ( Array.isArray( dept ) ) {
             dept.forEach( d => this.addDepartments( d ) );
         } else {
             this.departments = ( this.departments === null ) ? [ dept ] : [ ...this.departments, dept ];
+            this.grouper.addDepartment( dept );
         }
 
     }
@@ -132,31 +133,6 @@ class UserBuilder {
             }
         } )();
     }
-
-
-    // setSite
-    // setDepartment
-    // setName
-    // setTitle
-    // generatePassword
-    // sd
-
-    //     userName: uName,
-    ////////////     password: pass,
-    ////////////     commonName: `${ firstName } ${ lastName }`,
-    //////////// firstName: firstName,
-    //////////// lastName: lastName,
-    //////////// title: title,
-    //////////// office: ( otherSites.length > 0 ) ? primarySite + " " + otherSites.join( ' ' ) : primarySite,
-    //////////// description: title,
-    //////////// displayName: `${ firstName } ${ middleNames } ${ lastName } ${ suffix }`,
-    //////////// initials: `${ firstName.charAt( 0 ) }${ middleInitials }${ lastName.charAt( 0 ) }`,
-    //////////// department: primarySite,
-    // company: config.get( 'CompanyName' ),
-    // employeeNumber: eNumber,
-    // location: siteToOU['Lander'],
-    // passwordExpires: false,
-
 
 }
 

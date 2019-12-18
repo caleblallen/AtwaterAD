@@ -16,32 +16,29 @@ class Grouper {
         return [ ...this.groups ];
     }
 
-    setTitle( jobTitle ) {
+    deAliasTitle( jobTitle ) {
+        let ret = [];
+        if ( typeof ( jobTitle ) !== 'string' && Array.isArray( jobTitle ) ) {
+            jobTitle.forEach( i => ret = [ ...ret, ...this.deAliasTitle( i ) ] );
+        } else if ( config.has( `Aliases.${ jobTitle }` ) ) {
+            let deAliasedTitle = config.get( `Aliases.${ jobTitle }` );
+            console.warn( `Job Title Alias Detected. Resetting ${ jobTitle } to ${ deAliasedTitle }` );
 
-        this.title = jobTitle;
-        if ( !Array.isArray( this.title ) ) {
-            if ( config.has( `Aliases.${ jobTitle }` ) ) {
-
-                let deAliasedTitle = config.get( `Aliases.${ jobTitle }` );
-                console.warn( `Job Title Alias Detected. Resetting ${ jobTitle } to ${ deAliasedTitle }` );
-
-                if ( deAliasedTitle.includes( '.' ) ) {
-                    this.setTitle( deAliasedTitle.split( '.' ) );
-                } else {
-                    this.setTitle( deAliasedTitle );
-                }
+            if ( deAliasedTitle.includes( '.' ) ) {
+                ret = [ ...ret, ...this.deAliasTitle( deAliasedTitle.split( '.' ) ) ];
             } else {
-                this.addGroupsForTitle( jobTitle );
+                ret = [ ...ret, deAliasedTitle ];
             }
         } else {
-            if ( config.has( `Aliases.${ jobTitle[0] }` ) ) {
-                this.setTitle( config.get( `Aliases.${ jobTitle[0] }` ).split( '.' ).concat( jobTitle.slice( 1 ) ) );
-            } else {
-                this.addGroupsForTitle( jobTitle );
-
-            }
+            ret = [ jobTitle ];
         }
 
+        return ret;
+    }
+
+    setTitle( jobTitle ) {
+        this.title = this.deAliasTitle( jobTitle );
+        this.addGroupsForTitle( this.title );
     }
 
     setSite( site, force = false ) {
@@ -59,7 +56,7 @@ class Grouper {
 
     getTitle( joinChar = ' ' ) {
         if ( Array.isArray( this.title ) ) {
-            return this.title.join( joinChar );
+            return ( this.title.length > 1 ) ? this.title.join( joinChar ) : this.title[0];
         } else {
             return this.title;
         }
@@ -69,17 +66,14 @@ class Grouper {
         if ( site === null ) {
             return false;
         } else {
-            let siteKey = site.replace( ' ', '' );
-            // Add Site Packages, if available.
-
             // TODO: Refactor for cleaner flow. If statements can be consolidated.
             if ( config.has( `JobTitles.${ this.getTitle( '.' ) }` ) &&
-                config.get( `GroupPackages.Sites` ).hasOwnProperty( siteKey ) ) {
+                config.get( `GroupPackages.Sites` ).hasOwnProperty( site ) ) {
                 if ( config.get( `JobTitles.${ this.getTitle( '.' ) }.Departments` ).includes( "SchoolSite" ) ) {
-                    config.get( `GroupPackages.Sites.${ siteKey }` ).forEach( i => this.groups.add( i ) );
+                    config.get( `GroupPackages.Sites.${ site }` ).forEach( i => this.groups.add( i ) );
                 }
-            } else if ( force && config.get( `GroupPackages.Sites` ).hasOwnProperty( siteKey ) ) {
-                config.get( `GroupPackages.Sites.${ siteKey }` ).forEach( i => this.groups.add( i ) );
+            } else if ( force && config.get( `GroupPackages.Sites` ).hasOwnProperty( site ) ) {
+                config.get( `GroupPackages.Sites.${ site }` ).forEach( i => this.groups.add( i ) );
 
             } else {
                 console.warn( `Warning: Grouper.addGroupsForSite() No configuration for site ${ site }` );
