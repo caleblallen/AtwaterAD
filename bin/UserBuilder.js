@@ -134,6 +134,12 @@ class UserBuilder {
         } )();
     }
 
+    async pushToAd() {
+        let userOpts = await this.build();
+
+        let usr = await this.mediator.createUser( userOpts );
+        return usr;
+    }
 }
 
 module.exports = UserBuilder;

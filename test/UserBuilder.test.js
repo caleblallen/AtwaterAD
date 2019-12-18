@@ -2,6 +2,8 @@ var UserBuilder = require( '../bin/UserBuilder' );
 let colorTwister = require( './colorTwister' );
 var should = require( 'chai' ).should();
 const sinon = require( 'sinon' );
+var ADM = require( '../bin/ADMediator' );
+var Mediator = new ADM().getInstance();
 
 
 describe( 'User Builder Object should ', function () {
@@ -93,7 +95,6 @@ describe( 'User Builder Object should ', function () {
         usr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
         usr.addDepartments( [ 'Food Services', 'Personnel' ] );
         usr.build().then( ( user ) => {
-            console.log( user );
             user.username.should.match( /^L.*Cazaril$/ );
             user.password.should.match( /[A-Z][a-z][A-Z][a-z][0-9]{4}/ );
             user.firstName.should.equal( 'Lupe' );
@@ -118,6 +119,26 @@ describe( 'User Builder Object should ', function () {
                 'SARB Members',
                 'District Office Rooms' ] );
             done();
+        } );
+    } );
+
+    it( 'UserBuilder push a generated user to AD.', ( done ) => {
+        let usr = new UserBuilder();
+        usr.addName( 'Lupe', 'Cazaril', 'dy', 'Jr.' );
+        usr.addTitle( 'Custodian' );
+        usr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
+        usr.addDepartments( [ 'Food Services', 'Personnel' ] );
+        usr.pushToAd().then( ( res ) => {
+            res['sAMAccountName'].should.match( /^L.*Cazaril$/ );
+            return res;
+        } ).then( ( res ) => {
+            Mediator.deleteUser( res['sAMAccountName'] ).then( ( deleteResult ) => {
+                deleteResult['success'].should.equal( true );
+                done();
+            } ).catch( ( e ) => {
+                console.log( `ERROR:${ e.message }` );
+                done();
+            } );
         } );
     } );
 } );

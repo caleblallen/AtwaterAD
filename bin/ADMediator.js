@@ -89,12 +89,21 @@ class ADMediator {
         try {
             //TODO: Handle failure
             userCreated['canAuthenticate'] = await usr.authenticate( password );
-        } catch (err) {
-            console.log("Error Authenticating user: ", err);
+        } catch ( err ) {
+            console.log( "Error Authenticating user: ", err );
         }
+
 
         userCreated['moveSuccessful'] = moveOperation['success'];
         userCreated['password'] = password;
+
+        userCreated['groups'] = [];
+        for ( let g of groups ) {
+            let wasAdded = await this.addUserToGroup( userCreated['sAMAccountName'], g );
+            if ( wasAdded !== false ) {
+                userCreated['groups'].push( g );
+            }
+        }
         return userCreated;
     }
 
@@ -119,7 +128,6 @@ class ADMediator {
     async addUserToGroup(username, group) {
         try {
             await this.ad.user(username).addToGroup(group);
-            return await this.ad.user(username).isMemberOf(group);
         } catch (err) {
             console.log(`An error occured while trying to add the user ${username} to group ${group}: `, err.message);
         }

@@ -30,7 +30,7 @@ describe('Mediator Object should construct without errors', function () {
             initials: 'SS',
             department: 'Bellevue Support Services',
             company: 'Atwater Elementary School District',
-            groups: [ 'Wi-Fi Allowed', 'Thomas Olaeta Staff' ]
+            groups: [ 'WiFi-Allowed', 'Thomas Olaeta Staff' ]
         };
 
         Mediator.createUser( opts ).then(
@@ -65,7 +65,7 @@ describe('Mediator Object should construct without errors', function () {
             initials: 'SS',
             department: 'Bellevue Support Services',
             company: 'Atwater Elementary School District',
-            groups: [ 'Wi-Fi Allowed', 'Thomas Olaeta Staff' ]
+            groups: [ 'Thomas Olaeta Staff' ]
         };
 
         let uid;
@@ -85,7 +85,6 @@ describe('Mediator Object should construct without errors', function () {
                     resolve( true );
                 } ).catch( ( err ) => {
                     console.log( err.message );
-
                     resolve( false )
                 } )
             } )
@@ -104,7 +103,6 @@ describe('Mediator Object should construct without errors', function () {
                 } )
             }
         } ).finally( ( success ) => {
-            console.log( "UID = ", uid );
             Mediator.deleteUser( uid ).then( ( res ) => {
                 res['success'].should.be.equal( true );
                 done();
