@@ -19,7 +19,6 @@ class ADMediator {
     }
 
     async createUser( opts ) {
-
         let {
             username,
             password,

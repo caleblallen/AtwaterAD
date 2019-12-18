@@ -122,23 +122,43 @@ describe( 'User Builder Object should ', function () {
         } );
     } );
 
-    it( 'UserBuilder push a generated user to AD.', ( done ) => {
+    it( 'UserBuilder push a generated user to AD, and delete user with the deleteFromAd() function', ( done ) => {
         let usr = new UserBuilder();
         usr.addName( 'Lupe', 'Cazaril', 'dy', 'Jr.' );
         usr.addTitle( 'Custodian' );
         usr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
         usr.addDepartments( [ 'Food Services', 'Personnel' ] );
-        usr.pushToAd().then( ( res ) => {
-            res['sAMAccountName'].should.match( /^L.*Cazaril$/ );
-            return res;
-        } ).then( ( res ) => {
-            Mediator.deleteUser( res['sAMAccountName'] ).then( ( deleteResult ) => {
-                deleteResult['success'].should.equal( true );
-                done();
-            } ).catch( ( e ) => {
-                console.log( `ERROR:${ e.message }` );
-                done();
-            } );
+        usr.build().then( ( user ) => {
+            user.username.should.match( /^L.*Cazaril$/ );
+            return new Promise( ( ( resolve, reject ) => {
+                user.pushToAd().then( ( response ) => {
+                    resolve( user );
+                } ).catch( ( e ) => {
+                    console.log( e.message );
+                    resolve( user.username );
+                } );
+
+            } ) );
+        } ).then( ( userObject ) => {
+            if ( typeof userObject === 'string' ) {
+                Mediator.deleteUser( userObject ).then( ( deleteResult ) => {
+                    deleteResult['success'].should.equal( true );
+                    done();
+                } ).catch( ( e ) => {
+                    console.log( `ERROR:${ e.message }` );
+                    done();
+                } );
+            } else {
+                userObject.deleteFromAd().then( ( response ) => {
+                    if ( !response['success'] ) {
+                        console.warn( 'Warning: Could not delete ', userObject['username'] );
+                    }
+                    done();
+                } ).catch( ( e ) => {
+                    console.warn( 'Warning: Could not delete ', e.message );
+                } );
+            }
         } );
+
     } );
 } );

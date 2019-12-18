@@ -9,23 +9,22 @@ let colorTwister = require('./colorTwister');
 describe('Root Connectivity Test', function () {
 
 
+    // add a test hook
+    before( function () {
+        console.log( '\n' );
+        console.log( colorTwister( 'Running Route Tests'.padStart( 35, '╤═╧═' ).padEnd( 55, '═╧═╤' ) ) );
+        console.log( '\n' );
+    } );
 
-            // add a test hook
-            before(function() {
-                console.log('\n');
-                console.log(colorTwister('Running Route Tests'.padStart(35, '╤═╧═').padEnd(55, '═╧═╤')));
-                console.log('\n');
-            });
 
-
-    it('The Server should Respond to GET Requests to the Root Directory.', function (done) {
+    it( 'The Server should Respond to GET Requests to the Root Directory.', function ( done ) {
         // add an assertion
-        request(app).get('/').end((err, res) => {
-            if (err) return done(err);
-            res.statusCode.should.equal(200);
+        request( app ).get( '/' ).end( ( err, res ) => {
+            if ( err ) return done( err );
+            res.statusCode.should.equal( 200 );
             done();
-        });
-    })
+        } );
+    } )
 
 
 });

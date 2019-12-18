@@ -110,7 +110,7 @@ class UserBuilder {
     async build() {
         return await ( async () => {
             try {
-                let ret = {
+                let userObject = {
                     username: await this.generateUsername(),
                     password: this.password,
                     firstName: this.firstName,
@@ -124,9 +124,17 @@ class UserBuilder {
                     initials: this.initials,
                     department: this.departments.join( ', ' ),
                     company: this.company,
-                    groups: this.grouper.getGroups()
+                    groups: this.grouper.getGroups(),
+                    mediator: new adm().getInstance(),
+                    pushToAd: async function () {
+                        console.log( this );
+                        return await this.mediator.createUser( this );
+                    },
+                    deleteFromAd: async function () {
+                        return await this.mediator.deleteUser( this.username );
+                    }
                 };
-                return ret;
+                return await userObject;
             } catch ( e ) {
                 console.log( e.message );
                 return null;
@@ -134,12 +142,7 @@ class UserBuilder {
         } )();
     }
 
-    async pushToAd() {
-        let userOpts = await this.build();
 
-        let usr = await this.mediator.createUser( userOpts );
-        return usr;
-    }
 }
 
 module.exports = UserBuilder;
