@@ -13,9 +13,17 @@ let RequiredKeys = ['firstName', 'lastName', 'middleNames', 'suffix', 'otherSite
 
 router.post('/', validateRequestSchema(RequiredKeys), async (req, res, next) => {
     try {
-        let result = await Mediator.createUser(req.body['firstName'], req.body['lastName'], req.body["middleNames"],
-            req.body["suffix"], req.body['title'], req.body['primarySite'], req.body['otherSites'], req.body['employeeNumber']);
-        res.json(result);
+        /*
+        *
+        *  UserBuilder: addName( firstName, lastName, middleName, suffix = '' ),
+        *               addTitle( title ), addSite( site ),addDepartments( dept )
+        *
+        *
+        * */
+
+        let result = await Mediator.createUser( req.body['firstName'], req.body['lastName'], req.body["middleNames"],
+            req.body["suffix"], req.body['title'], req.body['primarySite'], req.body['otherSites'], req.body['employeeNumber'] );
+        res.json( result );
     } catch (err) {
         res.json({
             error: true,

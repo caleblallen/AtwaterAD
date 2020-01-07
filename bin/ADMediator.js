@@ -101,22 +101,27 @@ class ADMediator {
             let wasAdded = await this.addUserToGroup( userCreated['sAMAccountName'], g );
             if ( wasAdded !== false ) {
                 userCreated['groups'].push( g );
+            } else {
+                console.warn( `Error: Was unable to add user to group: ${ g }` );
             }
         }
         return userCreated;
     }
 
 
-
-    async deleteUser(username) {
-        return await this.ad.user(username).remove();
+    async getUser( username ) {
+        return await this.ad.user( username ).get();
     }
 
-    async getUserGroups(username) {
+    async deleteUser( username ) {
+        return await this.ad.user( username ).remove();
+    }
+
+    async getUserGroups( username ) {
         try {
-            return await this.ad.user(username).get({fields: ['groups']});
-        } catch (err) {
-            console.log('Error querying user groups', err.message);
+            return await this.ad.user( username ).get( { fields: [ 'groups' ] } );
+        } catch ( err ) {
+            console.log( 'Error querying user groups', err.message );
         }
     }
 

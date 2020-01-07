@@ -161,4 +161,10 @@ describe( 'User Builder Object should ', function () {
         } );
 
     } );
+
+    it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
+        let usr = new UserBuilder();
+        usr.pullExistingUser( 'callen' );
+        done();
+    } );
 } );

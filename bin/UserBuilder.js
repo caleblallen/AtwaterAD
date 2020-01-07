@@ -25,6 +25,26 @@ class UserBuilder {
         this.departments = null;
         this.company = config.get( 'CompanyName' );
         this.location = null;
+        this.isUpdateOperation = false;
+    }
+
+    async pullExistingUser( userName ) {
+        // TODO: Should I be checking like this first? Or is the extraction enough?
+        if ( await !this.mediator.userExists( userName ) ) {
+            throw "Username does not exist.";
+        }
+
+
+        let usr = await this.mediator.getUser( userName );
+
+        /*        for ( let g of usr.groups ) {
+                    this.groups
+                }*/
+
+        console.log( usr );
+
+        this.isUpdateOperation = true;
+
 
     }
 
@@ -126,9 +146,10 @@ class UserBuilder {
                     company: this.company,
                     groups: this.grouper.getGroups(),
                     mediator: new adm().getInstance(),
+                    isUpdateOperation: this.isUpdateOperation,
                     pushToAd: async function () {
-                        console.log( this );
-                        return await this.mediator.createUser( this );
+                        return await ( ( this.isUpdateOperation ) ?
+                            this.mediator.updateUser( this ) : this.mediator.createUser( this ) );
                     },
                     deleteFromAd: async function () {
                         return await this.mediator.deleteUser( this.username );
