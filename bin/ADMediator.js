@@ -108,8 +108,12 @@ class ADMediator {
         return userCreated;
     }
 
+    async updateUser( usr ) {
+        return usr;
+    }
 
     async getUser( username ) {
+        console.log( '---------get user ---------' );
         return await this.ad.user( username ).get();
     }
 

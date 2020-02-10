@@ -9,7 +9,7 @@ class UserBuilder {
         this.mediator = new adm().getInstance();
         this.util = new utilities().getInstance();
         this.grouper = new grpr();
-
+        this.office = null;
         this.firstName = null;
         this.lastName = null;
         this.middleName = null;
@@ -25,7 +25,7 @@ class UserBuilder {
         this.departments = null;
         this.company = config.get( 'CompanyName' );
         this.location = null;
-        this.isUpdateOperation = false;
+        this.alterations = null;
     }
 
     async pullExistingUser( userName ) {
@@ -34,24 +34,31 @@ class UserBuilder {
             throw "Username does not exist.";
         }
 
+        this.username = userName;
+
 
         let usr = await this.mediator.getUser( userName );
 
-        /*        for ( let g of usr.groups ) {
-                    this.groups
-                }*/
+        usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
+            .map( g => this.grouper.addGroupByName( g.cn ) );
+
+        // Extract any name included in the display name, but not already accounted for as Given and Sur names
+        const middleNameMatcher = new RegExp( `${ usr.givenName } (.*?) *${ usr.sn }` ).exec( usr.displayName );
+        let middleName = ( middleNameMatcher == null ) ? '' : middleNameMatcher[1];
+
+        // Add extracted names to the builder.
+        this.addName( usr.givenName, usr.sn, middleName );
 
         console.log( usr );
 
-        this.isUpdateOperation = true;
 
-
+        this.alterations = {};
     }
 
     addName( firstName, lastName, middleName, suffix = '' ) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.middleName = middleName;
+        this.middleName = ( middleName == null ) ? '' : middleName;
 
         //Collector for middle initials
         let middleInitials = "";
@@ -131,7 +138,7 @@ class UserBuilder {
         return await ( async () => {
             try {
                 let userObject = {
-                    username: await this.generateUsername(),
+                    username: ( this.username === null ) ? await this.generateUsername() : this.username,
                     password: this.password,
                     firstName: this.firstName,
                     lastName: this.lastName,
@@ -142,13 +149,13 @@ class UserBuilder {
                     description: this.description,
                     displayName: this.displayName,
                     initials: this.initials,
-                    department: this.departments.join( ', ' ),
+                    department: ( this.departments !== null ) ? this.departments.join( ', ' ) : null,
                     company: this.company,
                     groups: this.grouper.getGroups(),
                     mediator: new adm().getInstance(),
-                    isUpdateOperation: this.isUpdateOperation,
+                    alterations: this.alterations,
                     pushToAd: async function () {
-                        return await ( ( this.isUpdateOperation ) ?
+                        return await ( ( this.alterations ) ?
                             this.mediator.updateUser( this ) : this.mediator.createUser( this ) );
                     },
                     deleteFromAd: async function () {
