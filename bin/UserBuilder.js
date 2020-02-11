@@ -36,7 +36,6 @@ class UserBuilder {
 
         this.username = userName;
 
-
         let usr = await this.mediator.getUser( userName );
 
         usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
@@ -49,10 +48,18 @@ class UserBuilder {
         // Add extracted names to the builder.
         this.addName( usr.givenName, usr.sn, middleName );
 
-        console.log( usr );
-
-
         this.alterations = {};
+    }
+
+    async changeName( newFirstName, newLastName, newMiddleName, newSuffix ) {
+        this.alterations['changeName'] = {
+            newFirstName: newFirstName,
+            newLastName: newLastName,
+            newMiddleName: newMiddleName,
+            newSuffix: newSuffix,
+            newUserName: await this.generateUsername( ( newFirstName ) ? newFirstName : this.firstName,
+                ( newLastName ) ? newLastName : this.lastName )
+        }
     }
 
     addName( firstName, lastName, middleName, suffix = '' ) {
@@ -112,11 +119,11 @@ class UserBuilder {
 
     }
 
-    async generateUsername() {
+    async generateUsername( firstName = this.firstName, lastName = this.lastName ) {
         //TODO: verify that names contain only letters and hyphens.
         let fnIndex = 1;
-        while ( fnIndex < this.firstName.length ) {
-            let uName = this.firstName.substr( 0, fnIndex ) + this.lastName;
+        while ( fnIndex < firstName.length ) {
+            let uName = firstName.substr( 0, fnIndex ) + lastName;
             let isTaken = true;
             try {
                 isTaken = await this.mediator.userExists( uName );
@@ -155,7 +162,7 @@ class UserBuilder {
                     mediator: new adm().getInstance(),
                     alterations: this.alterations,
                     pushToAd: async function () {
-                        return await ( ( this.alterations ) ?
+                        return await ( ( this.alterations !== null ) ?
                             this.mediator.updateUser( this ) : this.mediator.createUser( this ) );
                     },
                     deleteFromAd: async function () {

@@ -109,11 +109,43 @@ class ADMediator {
     }
 
     async updateUser( usr ) {
+
+
+        const shell = require( 'node-powershell' );
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+
+
+        console.log( usr.alterations );
+
+        if ( usr.alterations.changeName ) {
+
+            const domainName = config.get( 'Credentials.LDAP.host' );
+
+            const userPrincipalName = `${ usr.alterations.changeName.newUserName }@${ domainName }`;
+
+            // console.log( `Get-ADUser "${ usr.username }"` );
+            // ps.addCommand( `Get-ADUser "${ usr.username }" | Set-ADUser -SamAccountName ${} -UserPrincipalName ${}` );
+            ps.addCommand( `Get-ADUser "${ usr.username }" | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }"` );
+            ps.invoke().then( output => {
+                console.log( output );
+            } ).catch( err => {
+                if ( 'ObjectNotFound' in err ) {
+                    console.log()
+                }
+                console.log( err );
+                ps.dispose();
+            } );
+
+        }
+
+
         return usr;
     }
 
     async getUser( username ) {
-        console.log( '---------get user ---------' );
         return await this.ad.user( username ).get();
     }
 

@@ -16,6 +16,7 @@
     "lodash.orderby": "^4.6.0",
     "mongoose": "^5.7.5",
     "node-cache": "^5.0.2",
+    "node-powershell": "^4.0.0",
     "node-ssha256": "^0.1.1",
     "saslprep": "^1.0.3"
   },

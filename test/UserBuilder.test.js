@@ -165,13 +165,20 @@ describe( 'User Builder Object should ', function () {
     it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
         let usr = new UserBuilder();
 
-        usr.pullExistingUser( 'techservices' ).then( () => {
-            usr.build().then( ( user ) => {
-                console.log( user );
-                user.firstName.should.equal( 'Tech' );
-            } ).catch( ( err ) => {
-                throw `User Build Failure: ${ err.message }`;
+        usr.pullExistingUser( 'bmarley' ).then( () => {
+            usr.changeName( null, 'Smith', 'Lenard', null ).then( () => {
+                    usr.build().then( ( user ) => {
+                        // console.log( user );
+                        user.firstName.should.equal( 'Bob' );
+                        user.pushToAd();
+                    } ).catch( ( err ) => {
+                        throw `User Build Failure: ${ err.message }`;
+                    } );
+                }
+            ).catch( ( err ) => {
+                throw `Change Name Error: ${ err.message }`
             } )
+
         } ).catch( ( err ) => {
             done( err.message );
         } ).finally( () => {
