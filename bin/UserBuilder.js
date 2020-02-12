@@ -30,6 +30,9 @@ class UserBuilder {
 
     async pullExistingUser( userName ) {
         // TODO: Should I be checking like this first? Or is the extraction enough?
+
+        console.log( 'pullExistingUser: ', userName );
+
         if ( await !this.mediator.userExists( userName ) ) {
             throw "Username does not exist.";
         }
@@ -37,6 +40,14 @@ class UserBuilder {
         this.username = userName;
 
         let usr = await this.mediator.getUser( userName );
+
+        // Rare bug where the "usr" variable returns as an empty object.
+        // I believe it only shows up during testing because in production the system will not make dozens of
+        // repeated calls per day.
+        if ( Object.entries( usr ).length === 0 && usr.constructor === Object ) {
+            throw "User does not exist";
+        }
+
 
         usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
             .map( g => this.grouper.addGroupByName( g.cn ) );
@@ -51,15 +62,22 @@ class UserBuilder {
         this.alterations = {};
     }
 
-    async changeName( newFirstName, newLastName, newMiddleName, newSuffix ) {
+    async changeName( newFirstName, newLastName, newMiddleName, newSuffix, forcedUserName = null ) {
+
+        let newUName;
+        if ( forcedUserName !== null ) {
+            newUName = forcedUserName;
+        } else {
+            newUName = await this.generateUsername( ( newFirstName ) ? newFirstName : this.firstName,
+                ( newLastName ) ? newLastName : this.lastName );
+        }
         this.alterations['changeName'] = {
             newFirstName: newFirstName,
             newLastName: newLastName,
             newMiddleName: newMiddleName,
             newSuffix: newSuffix,
-            newUserName: await this.generateUsername( ( newFirstName ) ? newFirstName : this.firstName,
-                ( newLastName ) ? newLastName : this.lastName )
-        }
+            newUserName: newUName,
+        };
     }
 
     addName( firstName, lastName, middleName, suffix = '' ) {

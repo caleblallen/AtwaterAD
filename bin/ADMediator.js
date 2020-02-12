@@ -133,7 +133,9 @@ class ADMediator {
                 console.log( output );
             } ).catch( err => {
                 if ( 'ObjectNotFound' in err ) {
-                    console.log()
+                    console.log( 'object not found' );
+                } else {
+                    console.log( err );
                 }
                 console.log( err );
                 ps.dispose();

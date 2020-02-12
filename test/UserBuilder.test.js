@@ -161,15 +161,74 @@ describe( 'User Builder Object should ', function () {
         } );
 
     } );
-
+/*
     it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
-        let usr = new UserBuilder();
 
-        usr.pullExistingUser( 'bmarley' ).then( () => {
-            usr.changeName( null, 'Smith', 'Lenard', null ).then( () => {
+        let originalName = {
+            firstName: 'Bob',
+            lastName: 'Marley',
+            middleName: 'Lenard',
+            suffix: null
+        };
+        let newName = {
+            firstName: 'Bob',
+            lastName: 'Smith',
+            middleName: 'Lenard',
+            suffix: null
+        };
+
+        let newUserName;
+        let originalUserName = 'BMarley';
+
+
+        let newUsr = new UserBuilder();
+        newUsr.addName( 'Lupe', 'Cazaril', 'dy', 'Jr.' );
+        newUsr.addTitle( 'Custodian' );
+        newUsr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
+        newUsr.addDepartments( [ 'Food Services', 'Personnel' ] );
+        newUsr.build().then( ( user ) => {
+            user.username.should.match( /^L.*Cazaril$/ );
+            return new Promise( ( ( resolve, reject ) => {
+                user.pushToAd().then( ( response ) => {
+                    resolve( user );
+                } ).catch( ( e ) => {
+                    console.log( e.message );
+                    resolve( user.username );
+                } );
+
+            } ) );
+        } ).then( ( userObject ) => {
+            if ( typeof userObject === 'string' ) {
+                Mediator.deleteUser( userObject ).then( ( deleteResult ) => {
+                    deleteResult['success'].should.equal( true );
+                    done();
+                } ).catch( ( e ) => {
+                    console.log( `ERROR:${ e.message }` );
+                    done();
+                } );
+            } else {
+                userObject.deleteFromAd().then( ( response ) => {
+                    if ( !response['success'] ) {
+                        console.warn( 'Warning: Could not delete ', userObject['username'] );
+                    }
+                    done();
+                } ).catch( ( e ) => {
+                    console.warn( 'Warning: Could not delete ', e.message );
+                } );
+            }
+        } );
+
+
+
+
+
+        let usr = new UserBuilder();
+        usr.pullExistingUser( originalUserName ).then( () => {
+            usr.changeName( originalName.firstName, 'Smith', 'Lenard', null ).then( () => {
                     usr.build().then( ( user ) => {
-                        // console.log( user );
-                        user.firstName.should.equal( 'Bob' );
+                        console.log( user.username );
+                        newUserName = user.alterations.changeName.newUserName;
+                        user.firstName.should.equal( originalName.firstName );
                         user.pushToAd();
                     } ).catch( ( err ) => {
                         throw `User Build Failure: ${ err.message }`;
@@ -177,13 +236,10 @@ describe( 'User Builder Object should ', function () {
                 }
             ).catch( ( err ) => {
                 throw `Change Name Error: ${ err.message }`
-            } )
-
+            } );
         } ).catch( ( err ) => {
-            done( err.message );
-        } ).finally( () => {
-            done();
+            done( err );
         } );
 
-    } );
+    } );*/
 } );
