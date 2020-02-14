@@ -33,14 +33,16 @@ describe('Mediator Object should construct without errors', function () {
             groups: [ 'WiFi-Allowed', 'Thomas Olaeta Staff' ]
         };
 
+        /*        Mediator.getUser('techservices').then( (usr) => {
+                    console.log( usr );
+                })*/
+
         Mediator.createUser( opts ).then(
             ( result ) => {
-                result['givenName'].should.equal( opts['firstName'] );
-                result['sn'].should.equal( opts['lastName'] );
+                result['firstName'].should.equal( opts['firstName'] );
+                result['lastName'].should.equal( opts['lastName'] );
                 result['title'].should.equal( opts['title'] );
-                result['canAuthenticate'].should.equal( true );
-                result['moveSuccessful'].should.equal( true );
-                return result['uid'];
+                return result['userName'];
             }
         ).then( ( uid ) => {
             Mediator.deleteUser( uid ).then( ( res ) => {
@@ -71,12 +73,10 @@ describe('Mediator Object should construct without errors', function () {
         let uid;
         Mediator.createUser( opts ).then(
             ( result ) => {
-                result['givenName'].should.equal( opts['firstName'] );
-                result['sn'].should.equal( opts['lastName'] );
+                result['firstName'].should.equal( opts['firstName'] );
+                result['lastName'].should.equal( opts['lastName'] );
                 result['title'].should.equal( opts['title'] );
-                result['canAuthenticate'].should.equal( true );
-                result['moveSuccessful'].should.equal( true );
-                uid = result['uid'];
+                uid = result['userName'];
             }
         ).then( () => {
             return new Promise( ( resolve, reject ) => {
