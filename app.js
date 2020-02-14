@@ -38,6 +38,4 @@ app.use('/createUser', createUserRouter);
 
 //app.listen(3000);
 
-console.log('Server is Online');
-
 module.exports = app;

@@ -1,6 +1,6 @@
 const config = require( 'config' );
 const utilities = require( './Utilities' );
-
+const shell = require( 'node-powershell' );
 
 class ADMediator {
 
@@ -12,10 +12,28 @@ class ADMediator {
             pass: config.LDAP.password,
         } );
         this.util = new utilities().getInstance();
+
+        this.ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
     }
 
     async userExists( username ) {
-        return await this.ad.user( username ).exists();
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+
+
+        // User exists if Get-ADUser returns something, rather than erroring out.
+        this.ps.addCommand( `Get-ADUser -Identity "${ username }"` );
+        try {
+            await this.ps.invoke();
+            return true;
+        } catch ( err ) {
+            return false;
+        }
     }
 
     async createUser( opts ) {
@@ -24,6 +42,7 @@ class ADMediator {
             password,
             firstName,
             lastName,
+            middleName,
             commonName,
             title,
             office,
@@ -41,10 +60,12 @@ class ADMediator {
         //Initialize return object
         let userCreated = {
             userName: username,
+            sAMAccountName: username,
             password: password,
             commonName: commonName,
             firstName: firstName,
             lastName: lastName,
+            middleName: middleName,
             title: title,
             office: office,
             description: description,
@@ -64,8 +85,7 @@ class ADMediator {
         cmd += `-GivenName "${ userCreated.firstName }" -Surname "${ userCreated.lastName }" `;
         cmd += `-Description "${ userCreated.description }" `;
 
-        // TODO: Handle Middle Names for User Account Creation
-        // cmd += `-OtherName ${ } `
+        cmd += `-OtherName ${ userCreated.middleName } `;
 
         cmd += `-AccountPassword (ConvertTo-SecureString "${ userCreated.password }" -AsPlainText -Force) `;
 
@@ -85,84 +105,28 @@ class ADMediator {
         // TODO: Handle Employee Numbers
         // cmd += `-EmployeeNumber "${ }" `;
 
-        console.log( cmd );
 
-        const shell = require( 'node-powershell' );
-        let ps = new shell( {
-            executionPolicy: 'Bypass',
-            noProfile: true
-        } );
+
 
         try {
-            let command = `New-ADUser`;
-            ps.addCommand( cmd );
-            let output = await ps.invoke();
-            ps.dispose();
-
-
-            /*TODO: In the event of a user with an identical commonName to another user in the 'location' OU The process will bug out. Implement Checking.*/
-            // userCreated = await this.ad.user().add( {
-            //     userName: username,
-            //     password: password,
-            //     commonName: commonName,
-            //     firstName: firstName,
-            //     lastName: lastName,
-            //     title: title,
-            //     office: office,
-            //     description: description,
-            //     displayName: displayName,
-            //     initials: initials,
-            //     department: department,
-            //     company: company,
-            //     location: siteToOU['Lander'],
-            //     passwordExpires: false,
-            // });
-        } catch (err) {
-            console.log("Error in ADMediator.createUser: ", err);
+            this.ps.addCommand( cmd );
+            this.ps.addCommand( `Enable-ADAccount -Identity "${ userCreated.userName }"` );
+            let output = await this.ps.invoke();
+            // this.ps.dispose();
+        } catch ( err ) {
+            console.log( "Error in ADMediator.createUser: ", err );
         }
 
-        /*        //Extract a function set for the user we just created.
-                let usr = this.ad.user( userCreated['sAMAccountName'] );
+        await this.addUserToGroups( userCreated['sAMAccountName'], groups );
 
-                //Initialize collector for moveOperation status.
-                let moveOperation = {success: false};
+        // TODO: I'm concerned that this is not overwriting properly. Possible bug?
+        userCreated['groups'] = await this.getUserGroups( userCreated['sAMAccountName'] );
 
-                try {
-                    //Attempt to move user from the Lander to the appropriate OU
-                    moveOperation = await usr.move( siteToOU[primarySite] );
-                } catch (err) {
-                    if (err['message'].includes('ENTRY_EXISTS')) {
-                        //TODO: This could be refactored to force the movement by deleting the user and then recreating with a different common name.
-                        console.log(`Cannot move user from the Lander (${siteToOU['Lander']}) to appropriate OU.` +
-                            `Most common cause is that a user with an identical Common Name (${userCreated['cn']}) ` +
-                            `already exists in the target OU (${siteToOU[primarySite]})`);
-                    } else {
-                        console.log(`Error moving user from ${siteToOU['Lander']} to appropriate OU: `, err);
-                    }
-                }
+        let missedGroups = groups.filter( x => !userCreated['groups'].includes( x ) );
+        if ( missedGroups.length > 0 ) {
+            console.warn( `WARNING: User ${ userCreated.userName } was not added to the following groups: `, missedGroups );
+        }
 
-                //Initialize flag to indicate whether the system can successfully authenticate with the new credentials.
-                userCreated['canAuthenticate'] = false;
-                try {
-                    //TODO: Handle failure
-                    userCreated['canAuthenticate'] = await usr.authenticate( password );
-                } catch ( err ) {
-                    console.log( "Error Authenticating user: ", err );
-                }
-
-
-                userCreated['moveSuccessful'] = moveOperation['success'];
-                userCreated['password'] = password;
-
-                userCreated['groups'] = [];
-                for ( let g of groups ) {
-                    let wasAdded = await this.addUserToGroup( userCreated['sAMAccountName'], g );
-                    if ( wasAdded !== false ) {
-                        userCreated['groups'].push( g );
-                    } else {
-                        console.warn( `Error: Was unable to add user to group: ${ g }` );
-                    }
-                }*/
         return userCreated;
     }
 
@@ -184,8 +148,8 @@ class ADMediator {
 
             const userPrincipalName = `${ usr.alterations.changeName.newUserName }@${ domainName }`;
 
-            ps.addCommand( `Get-ADUser "${ usr.username }" | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }"` );
-            ps.invoke().then( output => {
+            this.ps.addCommand( `Get-ADUser "${ usr.username }" | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }"` );
+            this.ps.invoke().then( output => {
                 console.log( output );
                 usr.username = usr.alterations.changeName.newUserName;
             } ).catch( err => {
@@ -196,7 +160,7 @@ class ADMediator {
                 }
 
                 return null;
-                ps.dispose();
+                // this.ps.dispose();
             } );
 
         }
@@ -210,27 +174,78 @@ class ADMediator {
     }
 
     async deleteUser( username ) {
-        return await this.ad.user( username ).remove();
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+        try {
+            //Remove-ADUser -Identity 'LCazaril' -Confirm:$False
+            this.ps.addCommand( `Remove-ADUser -Identity "${ username }" -Confirm:$False` );
+            await this.ps.invoke();
+            return true;
+        } catch ( err ) {
+            console.warn( `WARNING: Could not delete user ${ username }: `, err.message );
+            return false;
+        }
     }
+
 
     async getUserGroups( username ) {
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+
         try {
-            return await this.ad.user( username ).get( { fields: [ 'groups' ] } );
+            this.ps.addCommand( `(Get-ADPrincipalGroupMembership -Identity "${ username }" | Select -ExpandProperty Name) -join ','` );
+            let output = await this.ps.invoke();
+            return output.split( ',' );
         } catch ( err ) {
             console.log( 'Error querying user groups', err.message );
+            return [];
         }
     }
 
-    async isUserMemberOf(username, group) {
-        return this.ad.user(username).isMemberOf(group);
+    async isUserMemberOf( username, group ) {
+        return await this.getUserGroups( username ).includes( group );
+        // return this.ad.user(username).isMemberOf(group);
     }
 
-    async addUserToGroup(username, group) {
+    async addUserToGroups( username, groups ) {
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+
+        for ( let group of groups ) {
+            this.ps.addCommand( `Add-ADGroupMember -Identity "${ group }" -Members "${ username }"` );
+        }
+
         try {
-            await this.ad.user(username).addToGroup(group);
-        } catch (err) {
-            console.log(`An error occured while trying to add the user ${username} to group ${group}: `, err.message);
+            await this.ps.invoke();
+            //await this.ad.user(username).addToGroup(group);
+        } catch ( err ) {
+            console.log( `An error occured while trying to add the user ${ username } to groups: `, err.message );
+            return false;
         }
+        return true;
+    }
+
+    async addUserToGroup( username, group ) {
+        let ps = new shell( {
+            executionPolicy: 'Bypass',
+            noProfile: true
+        } );
+
+        try {
+            console.log( `Add-ADGroupMember -Identity "${ group }" -Members "${ username }"` );
+            this.ps.addCommand( `Add-ADGroupMember -Identity "${ group }" -Members "${ username }"` );
+            await this.ps.invoke();
+            //await this.ad.user(username).addToGroup(group);
+        } catch ( err ) {
+            console.log( `An error occured while trying to add the user ${ username } to group ${ group }: `, err.message );
+        }
+        return group;
     }
 
 }

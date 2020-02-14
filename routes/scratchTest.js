@@ -23,6 +23,12 @@ router.get( '/', function ( req, res, next ) {
 
         } ) );
     } ).then( ( userObject ) => {
+        // res.send( JSON.stringify( userObject ) );
+        delete userObject.mediator;
+        delete userObject.pushToAd;
+        delete userObject.deleteFromAd;
+
+        console.log( userObject );
         res.send( JSON.stringify( userObject ) );
     } );
     /*.then( ( userObject ) => {

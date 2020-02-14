@@ -167,6 +167,7 @@ class UserBuilder {
                     password: this.password,
                     firstName: this.firstName,
                     lastName: this.lastName,
+                    middleName: this.middleName,
                     commonName: this.commonName,
                     title: this.title,
                     office: this.office,

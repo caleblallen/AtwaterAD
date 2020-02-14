@@ -154,8 +154,8 @@ class Grouper {
         }
 
         for ( let p of pack ) {
-            if ( config.has( `GroupPackages.${ packages }` ) ) {
-                config.get( `GroupPackages.${ packages }` ).forEach( i => this.groups.add( i ) );
+            if ( config.has( `GroupPackages.${ p }` ) ) {
+                config.get( `GroupPackages.${ p }` ).forEach( i => this.groups.add( i ) );
             }
         }
     }
@@ -163,17 +163,6 @@ class Grouper {
     addGroupByName( name ) {
         this.groups.add( name );
     }
-
-
-    /*    build() {
-            return {
-              title: this.title,
-              department: (() => {
-                  return this.dept.join(', ');
-              })(),
-
-            };
-        }*/
 
 }
 
