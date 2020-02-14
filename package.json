@@ -11,6 +11,7 @@
     "config": "^3.2.3",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
+    "ejs": "^3.0.1",
     "express": "^4.16.4",
     "ldapjs": "^1.0.2",
     "lodash.orderby": "^4.6.0",

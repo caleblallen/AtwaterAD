@@ -161,7 +161,7 @@ describe( 'User Builder Object should ', function () {
         } );
 
     } );
-/*
+
     it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
 
         let originalName = {
@@ -181,13 +181,14 @@ describe( 'User Builder Object should ', function () {
         let originalUserName = 'BMarley';
 
 
+
         let newUsr = new UserBuilder();
-        newUsr.addName( 'Lupe', 'Cazaril', 'dy', 'Jr.' );
+        newUsr.addName( originalName.firstName, originalName.lastName, originalName.middleName, originalName.suffix );
         newUsr.addTitle( 'Custodian' );
         newUsr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
         newUsr.addDepartments( [ 'Food Services', 'Personnel' ] );
         newUsr.build().then( ( user ) => {
-            user.username.should.match( /^L.*Cazaril$/ );
+            user.username.should.match( new RegExp( `${ originalName.firstName.charAt( 0 ) }.*${ originalName.lastName }` ) );
             return new Promise( ( ( resolve, reject ) => {
                 user.pushToAd().then( ( response ) => {
                     resolve( user );
@@ -197,6 +198,25 @@ describe( 'User Builder Object should ', function () {
                 } );
 
             } ) );
+        } ).then( ( userObject ) => {
+            let userToChange = new UserBuilder();
+            return new Promise( (resolve, reject) => {
+                userToChange.pullExistingUser( userObject.username ).then( () => {
+                    userToChange.changeName( newName.firstName, newName.lastName, newName.middleName, newName.suffix ).then( () =>{
+                        userToChange.build().then( ( user ) => {
+                            // console.log( user.username );
+                            user.firstName.should.equal( originalName.firstName );
+                            user.pushToAd().then( ( alteredUser ) => {
+                                resolve( alteredUser );
+                            } );
+                        } ).catch( ( err ) => {
+                            throw `User Build Failure: ${ err.message }`;
+                            reject();
+                        } );
+                    });
+                })
+            });
+
         } ).then( ( userObject ) => {
             if ( typeof userObject === 'string' ) {
                 Mediator.deleteUser( userObject ).then( ( deleteResult ) => {
@@ -222,7 +242,7 @@ describe( 'User Builder Object should ', function () {
 
 
 
-        let usr = new UserBuilder();
+/*        let usr = new UserBuilder();
         usr.pullExistingUser( originalUserName ).then( () => {
             usr.changeName( originalName.firstName, 'Smith', 'Lenard', null ).then( () => {
                     usr.build().then( ( user ) => {
@@ -239,7 +259,7 @@ describe( 'User Builder Object should ', function () {
             } );
         } ).catch( ( err ) => {
             done( err );
-        } );
+        } );*/
 
-    } );*/
+    } );
 } );

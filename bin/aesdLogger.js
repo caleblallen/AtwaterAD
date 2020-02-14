@@ -11,15 +11,17 @@ class AesdLogger {
 
 
     constructor() {
+        console.log( config.logDB.username );
+
         /*Connect to the log database, using the configuration saved for the current environment.*/
-        mongoose.connect(`mongodb://${config.logDB.username}:${config.logDB.password}@${config.logDB.host}:${config.logDB.port}/${config.logDB.name}`, {
+        mongoose.connect( `mongodb://${ config.logDB.username }:${ config.logDB.password }@${ config.logDB.host }:${ config.logDB.port }/${ config.logDB.name }`, {
             useNewUrlParser: true,
             useUnifiedTopology: true
-        });
+        } );
         this.db = mongoose.connection;
-        this.db.on('error', console.error.bind(console, 'connection error:'));
-        this.db.once('open', () => {
-            console.log('Database Connection Achieved');
+        this.db.on( 'error', console.error.bind( console, 'connection error:' ) );
+        this.db.once( 'open', () => {
+            console.log( 'Database Connection Achieved' );
         });
 
         this.activeDirectoryLogSchema = new mongoose.Schema({
