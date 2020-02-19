@@ -18,16 +18,10 @@ class ADMediator {
     }
 
     async userExists( username ) {
-        let ps = new shell( {
-            executionPolicy: 'Bypass',
-            noProfile: true
-        } );
-
-
         // User exists if Get-ADUser returns something, rather than erroring out.
         this.ps.addCommand( `Get-ADUser -Identity "${ username }" -Credential ${ this.credentialCommand }` );
         try {
-            await this.ps.invoke();
+            let output = await this.ps.invoke();
             return true;
         } catch ( err ) {
             return false;
@@ -113,7 +107,7 @@ class ADMediator {
             let output = await this.ps.invoke();
             // this.ps.dispose();
         } catch ( err ) {
-            console.log( "Error in ADMediator.createUser: ", err );
+            console.warn( "Error in ADMediator.createUser: ", err );
         }
 
         await this.addUserToGroups( userCreated['sAMAccountName'], groups );
@@ -139,7 +133,7 @@ class ADMediator {
         } );
 
 
-        // console.log( usr.alterations );
+        // console.warn( usr.alterations );
 
         if ( usr.alterations.changeName ) {
 
@@ -149,13 +143,12 @@ class ADMediator {
 
             this.ps.addCommand( `Get-ADUser "${ usr.username }" -Credential ${ this.credentialCommand } | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }"` );
             this.ps.invoke().then( output => {
-                console.log( output );
                 usr.username = usr.alterations.changeName.newUserName;
             } ).catch( err => {
                 if ( 'ObjectNotFound' in err ) {
-                    console.log( 'object not found' );
+                    console.warn( 'object not found' );
                 } else {
-                    console.log( err );
+                    console.warn( err );
                 }
 
                 return null;
@@ -197,17 +190,12 @@ class ADMediator {
 
 
     async getUserGroups( username ) {
-        let ps = new shell( {
-            executionPolicy: 'Bypass',
-            noProfile: true
-        } );
-
         try {
-            this.ps.addCommand( `(Get-ADPrincipalGroupMembership -Identity "${ username }" -Credential ${ this.credentialCommand } | Select -ExpandProperty Name) -join ','` );
+            this.ps.addCommand( `Get-ADPrincipalGroupMembership -Identity "${ username }" -Credential ${ this.credentialCommand } | Select -ExpandProperty Name | ConvertTo-Json -Compress` );
             let output = await this.ps.invoke();
-            return output.replace( /\r\n|\n|\r/gm, '' ).split( ',' );
+            return JSON.parse( output );
         } catch ( err ) {
-            console.log( 'Error querying user groups', err.message );
+            console.warn( 'Error querying user groups', err.message );
             return [];
         }
     }
@@ -231,7 +219,7 @@ class ADMediator {
         try {
             await this.ps.invoke();
         } catch ( err ) {
-            console.log( `An error occured while trying to add the user ${ username } to groups: `, err.message );
+            console.warn( `An error occured while trying to add the user ${ username } to groups: `, err.message );
             return false;
         }
         return true;
@@ -242,7 +230,7 @@ class ADMediator {
             this.ps.addCommand( `Add-ADGroupMember -Identity "${ group }" -Members "${ username }" -Credential ${ this.credentialCommand }` );
             await this.ps.invoke();
         } catch ( err ) {
-            console.log( `An error occured while trying to add the user ${ username } to group ${ group }: `, err.message );
+            console.warn( `An error occured while trying to add the user ${ username } to group ${ group }: `, err.message );
             return false;
         }
         return true;

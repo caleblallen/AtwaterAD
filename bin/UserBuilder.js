@@ -31,27 +31,33 @@ class UserBuilder {
     async pullExistingUser( userName ) {
         // TODO: Should I be checking like this first? Or is the extraction enough?
 
-        console.log( 'pullExistingUser: ', userName );
-
-        if ( await !this.mediator.userExists( userName ) ) {
-            throw "Username does not exist.";
+        let usr = null;
+        try {
+            usr = await this.mediator.getUser( userName );
+        } catch ( e ) {
+            throw `Unable extract user information from active directory. User does not exist? ${ e.message }`;
         }
 
         this.username = userName;
 
-        let usr = await this.mediator.getUser( userName );
-
-        // Rare bug where the "usr" variable returns as an empty object.
-        // I believe it only shows up during testing because in production the system will not make dozens of
-        // repeated calls per day.
-        if ( Object.entries( usr ).length === 0 && usr.constructor === Object ) {
-            throw "User does not exist";
+        try {
+            usr.groups = await this.mediator.getUserGroups( this.username );
+        } catch ( e ) {
+            throw `Unable extract user group membership: ${ e.message }`;
         }
 
+        console.log( usr.groups );
+        // // Rare bug where the "usr" variable returns as an empty object.
+        // // I believe it only shows up during testing because in production the system will not make dozens of
+        // // repeated calls per day.
+        // if ( Object.entries( usr ).length === 0 && usr.constructor === Object ) {
+        //     throw "User does not exist";
+        // }
 
-        usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
+
+        /*usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
             .map( g => this.grouper.addGroupByName( g.cn ) );
-
+*/
         // Extract any name included in the display name, but not already accounted for as Given and Sur names
         const middleNameMatcher = new RegExp( `${ usr.givenName } (.*?) *${ usr.sn }` ).exec( usr.displayName );
         let middleName = ( middleNameMatcher == null ) ? '' : middleNameMatcher[1];
@@ -60,6 +66,8 @@ class UserBuilder {
         this.addName( usr.givenName, usr.sn, middleName );
 
         this.alterations = {};
+
+        // console.log( this );
     }
 
     async changeName( newFirstName, newLastName, newMiddleName, newSuffix, forcedUserName = null ) {
@@ -146,7 +154,7 @@ class UserBuilder {
             try {
                 isTaken = await this.mediator.userExists( uName );
             } catch ( err ) {
-                console.log( 'ADMediator.generateUsername. Error checking for username existence.', err );
+                console.warn( 'ADMediator.generateUsername. Error checking for username existence.', err );
             }
 
             if ( !isTaken ) {
@@ -190,7 +198,7 @@ class UserBuilder {
                 };
                 return await userObject;
             } catch ( e ) {
-                console.log( e.message );
+                console.warn( e.message );
                 return null;
             }
         } )();

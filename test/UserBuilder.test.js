@@ -109,7 +109,6 @@ describe( 'User Builder Object should ', function () {
             user.company.should.equal( 'Atwater Elementary School District' );
             user.groups.should.be.an( 'array' ).with.members( [ 'WiFi-Allowed',
                 'AESD Staff',
-                'Domain Users',
                 'All Classified Staff',
                 'Support Services Staff',
                 'Aileen Colburn Staff',
@@ -164,102 +163,76 @@ describe( 'User Builder Object should ', function () {
 
     it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
 
-        let originalName = {
+        let original = {
             firstName: 'Bob',
             lastName: 'Marley',
             middleName: 'Lenard',
-            suffix: null
+            suffix: null,
+            jobTitle: 'Library Media Specialist',
+            primarySite: 'Aileen Colburn',
+            userName: null
         };
-        let newName = {
+        let updated = {
             firstName: 'Bob',
             lastName: 'Smith',
             middleName: 'Lenard',
-            suffix: null
+            suffix: null,
+            jobTitle: 'Library Media Specialist',
+            primarySite: 'Aileen Colburn',
+            userName: null
         };
 
-        let newUserName;
-        let originalUserName = 'BMarley';
 
-
-
-        let newUsr = new UserBuilder();
-        newUsr.addName( originalName.firstName, originalName.lastName, originalName.middleName, originalName.suffix );
-        newUsr.addTitle( 'Custodian' );
-        newUsr.addSite( [ 'Aileen Colburn', 'Thomas Olaeta' ] );
-        newUsr.addDepartments( [ 'Food Services', 'Personnel' ] );
-        newUsr.build().then( ( user ) => {
-            user.username.should.match( new RegExp( `${ originalName.firstName.charAt( 0 ) }.*${ originalName.lastName }` ) );
-            return new Promise( ( ( resolve, reject ) => {
-                user.pushToAd().then( ( response ) => {
-                    resolve( user );
-                } ).catch( ( e ) => {
-                    console.log( e.message );
-                    resolve( user.username );
+        let usr = new UserBuilder();
+        usr.addName( original.firstName, original.lastName, original.middleName, original.suffix );
+        usr.addTitle( original.jobTitle );
+        usr.addSite( original.primarySite );
+        usr.build().then( ( user ) => {
+            return new Promise( ( resolve, reject ) => {
+                user.username.should.match( new RegExp( `^${ original.firstName.charAt( 0 ) }.*${ original.lastName }$` ) );
+                user.password.should.match( /[A-Z][a-z][A-Z][a-z][0-9]{4}/ );
+                user.firstName.should.equal( original.firstName );
+                user.lastName.should.equal( original.lastName );
+                user.commonName.should.equal( `${ original.firstName } ${ original.lastName }` );
+                user.title.should.equal( original.jobTitle );
+                user.description.should.equal( original.jobTitle );
+                user.office.should.equal( original.primarySite );
+                user.primarySite.should.equal( original.primarySite );
+                user.department.should.equal( original.primarySite );
+                // TODO: This "initials" algo is garbage. Rework to account for multi-name fields.
+                user.initials.should.equal( `${ original.firstName.charAt( 0 ) }${ original.middleName.charAt( 0 ) }${ original.lastName.charAt( 0 ) }` );
+                user.company.should.equal( 'Atwater Elementary School District' );
+                user.pushToAd().then( ( pushResult ) => {
+                    resolve( pushResult.userName );
                 } );
+            } );
+        } ).then( ( uName ) => {
+            original.userName = uName;
+            // console.log( `--------------------------`, uName );
+            let originalUserBuilder = new UserBuilder();
+            originalUserBuilder.pullExistingUser( uName ).then( () => {
+                // console.log( `pullExistingUser`, originalUserBuilder );
+                originalUserBuilder.build().then( ( originalUser ) => {
+                    // console.log( `build`, originalUser );
+                    originalUser.deleteFromAd().then( ( opStatus ) => {
+                        // console.log( `deleteFromAd` );
+                        opStatus.success.should.equal( true );
+                        // console.log( `---------------------------------------Second Section of Last Test` );
 
-            } ) );
-        } ).then( ( userObject ) => {
-            let userToChange = new UserBuilder();
-            return new Promise( (resolve, reject) => {
-                userToChange.pullExistingUser( userObject.username ).then( () => {
-                    userToChange.changeName( newName.firstName, newName.lastName, newName.middleName, newName.suffix ).then( () =>{
-                        userToChange.build().then( ( user ) => {
-                            // console.log( user.username );
-                            user.firstName.should.equal( originalName.firstName );
-                            user.pushToAd().then( ( alteredUser ) => {
-                                resolve( alteredUser );
-                            } );
-                        } ).catch( ( err ) => {
-                            throw `User Build Failure: ${ err.message }`;
-                            reject();
-                        } );
-                    });
-                })
-            });
-
-        } ).then( ( userObject ) => {
-            if ( typeof userObject === 'string' ) {
-                Mediator.deleteUser( userObject ).then( ( deleteResult ) => {
-                    deleteResult['success'].should.equal( true );
-                    done();
-                } ).catch( ( e ) => {
-                    console.log( `ERROR:${ e.message }` );
-                    done();
-                } );
-            } else {
-                userObject.deleteFromAd().then( ( response ) => {
-                    if ( !response['success'] ) {
-                        console.warn( 'Warning: Could not delete ', userObject['username'] );
-                    }
-                    done();
-                } ).catch( ( e ) => {
-                    console.warn( 'Warning: Could not delete ', e.message );
-                } );
-            }
-        } );
-
-
-
-
-
-/*        let usr = new UserBuilder();
-        usr.pullExistingUser( originalUserName ).then( () => {
-            usr.changeName( originalName.firstName, 'Smith', 'Lenard', null ).then( () => {
-                    usr.build().then( ( user ) => {
-                        console.log( user.username );
-                        newUserName = user.alterations.changeName.newUserName;
-                        user.firstName.should.equal( originalName.firstName );
-                        user.pushToAd();
+                        done();
                     } ).catch( ( err ) => {
-                        throw `User Build Failure: ${ err.message }`;
-                    } );
-                }
-            ).catch( ( err ) => {
-                throw `Change Name Error: ${ err.message }`
+                        throw `Error Deleting Original User: ${ err.message }`;
+                    } )
+                } ).catch( ( err ) => {
+                    throw `Error Building Original user: ${ err.message }`
+                } );
+            } ).catch( ( err ) => {
+                throw `Error Pulling Original User Data: ${ err.message }`;
             } );
         } ).catch( ( err ) => {
+            console.warn( `Test Error: `, err );
             done( err );
-        } );*/
+        } );
 
     } );
 } );
