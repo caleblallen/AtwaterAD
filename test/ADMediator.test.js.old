@@ -17,7 +17,7 @@ describe('Mediator Object should construct without errors', function () {
     it( 'Mediator should create and delete users without error.', ( done ) => {
 
         let opts = {
-            username: 'SpongebobSquarepants',
+            username: 'SpongeSquarepants',
             password: 'SpSq0000',
             firstName: 'Spongebob',
             lastName: 'Squarepants',

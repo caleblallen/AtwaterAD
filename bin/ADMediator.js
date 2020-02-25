@@ -73,7 +73,13 @@ class ADMediator {
         let cmd = `New-ADUser -SamAccountName "${ userCreated.userName }" `;
         cmd += `-UserPrincipalName "${ userCreated.userName }@${ config.get( 'Defaults.Domain' ) }" `;
         cmd += `-DisplayName "${ userCreated.firstName } ${ userCreated.lastName }" `;
-        cmd += `-Name "${ userCreated.firstName } ${ userCreated.lastName }" `;
+
+        if ( userCreated.middleName !== null && userCreated.middleName.match( /.*\w.*/ ) ) {
+            cmd += `-Name "${ userCreated.firstName } ${ userCreated.middleName } ${ userCreated.lastName }" `;
+        } else {
+            cmd += `-Name "${ userCreated.firstName } ${ userCreated.lastName }" `;
+        }
+
         cmd += `-GivenName "${ userCreated.firstName }" -Surname "${ userCreated.lastName }" `;
         cmd += `-Description "${ userCreated.description }" `;
 
@@ -99,25 +105,28 @@ class ADMediator {
         // cmd += `-EmployeeNumber "${ }" `;
 
 
-
-
+        // TODO: Limit Usernames to 20 Characters or throw error.
         try {
             this.ps.addCommand( cmd );
             this.ps.addCommand( `Enable-ADAccount -Identity "${ userCreated.userName }" -Credential ${ this.credentialCommand }` );
             let output = await this.ps.invoke();
             // this.ps.dispose();
         } catch ( err ) {
-            console.warn( "Error in ADMediator.createUser: ", err );
+            console.error( "Error in ADMediator.createUser: ", err );
         }
 
-        await this.addUserToGroups( userCreated['sAMAccountName'], groups );
+        try {
+            await this.addUserToGroups( userCreated['sAMAccountName'], groups );
+        } catch ( err ) {
+            console.error( `WARNING: Error adding new user to groups: `, err.message );
+        }
 
         // TODO: I'm concerned that this is not overwriting properly. Possible bug?
         userCreated['groups'] = await this.getUserGroups( userCreated['sAMAccountName'] );
 
         let missedGroups = groups.filter( x => !userCreated['groups'].includes( x ) );
         if ( missedGroups.length > 0 ) {
-            console.warn( `WARNING: User ${ userCreated.userName } was not added to the following groups: `, missedGroups );
+            console.error( `WARNING: User ${ userCreated.userName } was not added to the following groups: `, missedGroups );
         }
 
         return userCreated;
@@ -133,7 +142,7 @@ class ADMediator {
         } );
 
 
-        // console.warn( usr.alterations );
+        // console.error( usr.alterations );
 
         if ( usr.alterations.changeName ) {
 
@@ -146,9 +155,9 @@ class ADMediator {
                 usr.username = usr.alterations.changeName.newUserName;
             } ).catch( err => {
                 if ( 'ObjectNotFound' in err ) {
-                    console.warn( 'object not found' );
+                    console.error( 'object not found' );
                 } else {
-                    console.warn( err );
+                    console.error( err );
                 }
 
                 return null;
@@ -167,7 +176,7 @@ class ADMediator {
             let output = await this.ps.invoke();
             return JSON.parse( output );
         } catch ( err ) {
-            console.warn( `WARNING: User ${ username } could not be retrieved: `, err.message );
+            console.error( `WARNING: User ${ username } could not be retrieved: `, err.message );
             return null;
         }
     }
@@ -183,7 +192,7 @@ class ADMediator {
             await this.ps.invoke();
             return { 'success': true };
         } catch ( err ) {
-            console.warn( `WARNING: Could not delete user ${ username }: `, err.message );
+            console.error( `WARNING: Could not delete user ${ username }: `, err.message );
             return { 'success': false };
         }
     }
@@ -195,7 +204,7 @@ class ADMediator {
             let output = await this.ps.invoke();
             return JSON.parse( output );
         } catch ( err ) {
-            console.warn( 'Error querying user groups', err.message );
+            console.error( 'Error querying user groups', err.message );
             return [];
         }
     }
@@ -219,7 +228,7 @@ class ADMediator {
         try {
             await this.ps.invoke();
         } catch ( err ) {
-            console.warn( `An error occured while trying to add the user ${ username } to groups: `, err.message );
+            console.error( `An error occured while trying to add the user ${ username } to groups: `, err.message );
             return false;
         }
         return true;
@@ -230,7 +239,7 @@ class ADMediator {
             this.ps.addCommand( `Add-ADGroupMember -Identity "${ group }" -Members "${ username }" -Credential ${ this.credentialCommand }` );
             await this.ps.invoke();
         } catch ( err ) {
-            console.warn( `An error occured while trying to add the user ${ username } to group ${ group }: `, err.message );
+            console.error( `An error occured while trying to add the user ${ username } to group ${ group }: `, err.message );
             return false;
         }
         return true;

@@ -46,24 +46,18 @@ class UserBuilder {
             throw `Unable extract user group membership: ${ e.message }`;
         }
 
-        console.log( usr.groups );
-        // // Rare bug where the "usr" variable returns as an empty object.
-        // // I believe it only shows up during testing because in production the system will not make dozens of
-        // // repeated calls per day.
-        // if ( Object.entries( usr ).length === 0 && usr.constructor === Object ) {
-        //     throw "User does not exist";
-        // }
-
-
         /*usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
             .map( g => this.grouper.addGroupByName( g.cn ) );
 */
         // Extract any name included in the display name, but not already accounted for as Given and Sur names
-        const middleNameMatcher = new RegExp( `${ usr.givenName } (.*?) *${ usr.sn }` ).exec( usr.displayName );
+        const middleNameMatcher = new RegExp( `${ usr.GivenName } (.*?) *${ usr.Surname }` ).exec( usr.Name );
+
+        // console.log( middleNameMatcher );
+
         let middleName = ( middleNameMatcher == null ) ? '' : middleNameMatcher[1];
 
         // Add extracted names to the builder.
-        this.addName( usr.givenName, usr.sn, middleName );
+        this.addName( usr.GivenName, usr.Surname, middleName );
 
         this.alterations = {};
 
@@ -91,15 +85,15 @@ class UserBuilder {
     addName( firstName, lastName, middleName, suffix = '' ) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.middleName = ( middleName == null ) ? '' : middleName;
+        this.middleName = middleName === null ? '' : middleName;
 
         //Collector for middle initials
         let middleInitials = "";
 
         //Extract middle initials.
-        if ( this.middleName.length > 0 ) {
+        if ( this.middleName !== null ) {
             middleInitials = this.middleName.split( ' ' ).reduce( ( collector, currentName ) => {
-                return collector + currentName.charAt( 0 )
+                return currentName === '' ? collector : collector + currentName.charAt( 0 );
             }, "" );
         }
 
@@ -154,7 +148,7 @@ class UserBuilder {
             try {
                 isTaken = await this.mediator.userExists( uName );
             } catch ( err ) {
-                console.warn( 'ADMediator.generateUsername. Error checking for username existence.', err );
+                console.error( 'ADMediator.generateUsername. Error checking for username existence.', err );
             }
 
             if ( !isTaken ) {
@@ -198,7 +192,7 @@ class UserBuilder {
                 };
                 return await userObject;
             } catch ( e ) {
-                console.warn( e.message );
+                console.error( e.message );
                 return null;
             }
         } )();

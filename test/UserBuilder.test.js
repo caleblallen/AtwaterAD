@@ -207,30 +207,33 @@ describe( 'User Builder Object should ', function () {
                 } );
             } );
         } ).then( ( uName ) => {
-            original.userName = uName;
-            // console.log( `--------------------------`, uName );
-            let originalUserBuilder = new UserBuilder();
-            originalUserBuilder.pullExistingUser( uName ).then( () => {
-                // console.log( `pullExistingUser`, originalUserBuilder );
-                originalUserBuilder.build().then( ( originalUser ) => {
-                    // console.log( `build`, originalUser );
-                    originalUser.deleteFromAd().then( ( opStatus ) => {
-                        // console.log( `deleteFromAd` );
-                        opStatus.success.should.equal( true );
-                        // console.log( `---------------------------------------Second Section of Last Test` );
-
-                        done();
+            return new Promise( ( resolve, reject ) => {
+                original.userName = uName;
+                let originalUserBuilder = new UserBuilder();
+                console.log( originalUserBuilder );
+                originalUserBuilder.pullExistingUser( uName ).then( () => {
+                    console.log( `pullExistingUser`, originalUserBuilder );
+                    originalUserBuilder.build().then( ( originalUser ) => {
+                        console.log( `build`, originalUser );
+                        originalUser.deleteFromAd().then( ( opStatus ) => {
+                            console.log( `deleteFromAd` );
+                            opStatus.success.should.equal( true );
+                            console.log( `---------------------------------------Second Section of Last Test` );
+                            resolve();
+                        } ).catch( ( err ) => {
+                            reject( `Error Deleting Original User: ${ err.message }` );
+                        } )
                     } ).catch( ( err ) => {
-                        throw `Error Deleting Original User: ${ err.message }`;
-                    } )
+                        reject( `Error Building Original user: ${ err.message }` );
+                    } );
                 } ).catch( ( err ) => {
-                    throw `Error Building Original user: ${ err.message }`
+                    reject( `Error Pulling Original User Data: ${ err.message }` );
                 } );
-            } ).catch( ( err ) => {
-                throw `Error Pulling Original User Data: ${ err.message }`;
             } );
+        } ).then( () => {
+            done();
         } ).catch( ( err ) => {
-            console.warn( `Test Error: `, err );
+            console.error( `Test Error: `, err );
             done( err );
         } );
 
