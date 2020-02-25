@@ -46,9 +46,12 @@ class UserBuilder {
             throw `Unable extract user group membership: ${ e.message }`;
         }
 
-        /*usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g.cn ) )
-            .map( g => this.grouper.addGroupByName( g.cn ) );
-*/
+        console.log( usr.groups );
+
+        usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g ) )
+            .map( g => this.grouper.addGroupByName( g ) );
+
+        console.log( this.grouper.getGroups() );
         // Extract any name included in the display name, but not already accounted for as Given and Sur names
         const middleNameMatcher = new RegExp( `${ usr.GivenName } (.*?) *${ usr.Surname }` ).exec( usr.Name );
 
@@ -60,8 +63,6 @@ class UserBuilder {
         this.addName( usr.GivenName, usr.Surname, middleName );
 
         this.alterations = {};
-
-        // console.log( this );
     }
 
     async changeName( newFirstName, newLastName, newMiddleName, newSuffix, forcedUserName = null ) {
@@ -185,6 +186,8 @@ class UserBuilder {
                     pushToAd: async function () {
                         return await ( ( this.alterations !== null ) ?
                             this.mediator.updateUser( this ) : this.mediator.createUser( this ) );
+                        //TODO: In the event that the passed username is taken by another processes in between
+                        // generation and the AD push, make sure the process tries again.
                     },
                     deleteFromAd: async function () {
                         return await this.mediator.deleteUser( this.username );

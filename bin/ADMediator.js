@@ -24,6 +24,7 @@ class ADMediator {
             let output = await this.ps.invoke();
             return true;
         } catch ( err ) {
+            // TODO: Too broad. Rewrite to return only if user not found, throw otherwise.
             return false;
         }
     }
@@ -133,36 +134,33 @@ class ADMediator {
     }
 
     async updateUser( usr ) {
-
-
-        const shell = require( 'node-powershell' );
-        let ps = new shell( {
-            executionPolicy: 'Bypass',
-            noProfile: true
-        } );
-
-
-        // console.error( usr.alterations );
-
+        console.log( '------User Update Call' );
         if ( usr.alterations.changeName ) {
+
+            console.log( `====================user change name`, usr.username );
+            console.log( usr.username );
 
             const domainName = config.get( 'Credentials.LDAP.host' );
 
             const userPrincipalName = `${ usr.alterations.changeName.newUserName }@${ domainName }`;
 
-            this.ps.addCommand( `Get-ADUser "${ usr.username }" -Credential ${ this.credentialCommand } | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }"` );
-            this.ps.invoke().then( output => {
+            // why is usr.username defined within the interpolated string????
+            this.ps.addCommand( `Get-ADUser "${ usr.username }" -Credential ${ this.credentialCommand } | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }" -Credential ${ this.credentialCommand }` );
+
+            try {
+                let output = await this.ps.invoke();
+                console.log( output );
                 usr.username = usr.alterations.changeName.newUserName;
-            } ).catch( err => {
+            } catch ( err ) {
+                usr.username = null;
                 if ( 'ObjectNotFound' in err ) {
                     console.error( 'object not found' );
                 } else {
                     console.error( err );
                 }
+            }
 
-                return null;
-                // this.ps.dispose();
-            } );
+            return usr.username;
 
         }
 

@@ -199,7 +199,6 @@ describe( 'User Builder Object should ', function () {
                 user.office.should.equal( original.primarySite );
                 user.primarySite.should.equal( original.primarySite );
                 user.department.should.equal( original.primarySite );
-                // TODO: This "initials" algo is garbage. Rework to account for multi-name fields.
                 user.initials.should.equal( `${ original.firstName.charAt( 0 ) }${ original.middleName.charAt( 0 ) }${ original.lastName.charAt( 0 ) }` );
                 user.company.should.equal( 'Atwater Elementary School District' );
                 user.pushToAd().then( ( pushResult ) => {
@@ -208,17 +207,31 @@ describe( 'User Builder Object should ', function () {
             } );
         } ).then( ( uName ) => {
             return new Promise( ( resolve, reject ) => {
+                let originalUserBuilder = new UserBuilder();
+                originalUserBuilder.pullExistingUser( uName ).then( () => {
+                    originalUserBuilder.changeName( updated.firstName, updated.lastName, updated.middleName,
+                        updated.suffix ).then( () => {
+                        originalUserBuilder.build().then( ( alteredUser ) => {
+                            alteredUser.pushToAd().then( ( updatedUser ) => {
+                                //Run Tests
+                                console.log( updatedUser );
+                                resolve( updatedUser.username );
+                            } );
+                        } );
+                    } );
+                } ).catch( ( err ) => {
+                    // console.error( `Problem with name change`, err.message );
+                    reject( `Problem with name change ${ err.message }` );
+                } );
+            } );
+        } ).then( ( uName ) => {
+            return new Promise( ( resolve, reject ) => {
                 original.userName = uName;
                 let originalUserBuilder = new UserBuilder();
-                console.log( originalUserBuilder );
                 originalUserBuilder.pullExistingUser( uName ).then( () => {
-                    console.log( `pullExistingUser`, originalUserBuilder );
                     originalUserBuilder.build().then( ( originalUser ) => {
-                        console.log( `build`, originalUser );
                         originalUser.deleteFromAd().then( ( opStatus ) => {
-                            console.log( `deleteFromAd` );
                             opStatus.success.should.equal( true );
-                            console.log( `---------------------------------------Second Section of Last Test` );
                             resolve();
                         } ).catch( ( err ) => {
                             reject( `Error Deleting Original User: ${ err.message }` );
