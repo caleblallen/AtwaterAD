@@ -134,22 +134,48 @@ class ADMediator {
     }
 
     async updateUser( usr ) {
-        console.log( '------User Update Call' );
         if ( usr.alterations.changeName ) {
 
-            console.log( `====================user change name`, usr.username );
-            console.log( usr.username );
-
+            // Alter User Name
             const domainName = config.get( 'Credentials.LDAP.host' );
 
             const userPrincipalName = `${ usr.alterations.changeName.newUserName }@${ domainName }`;
 
-            // why is usr.username defined within the interpolated string????
-            this.ps.addCommand( `Get-ADUser "${ usr.username }" -Credential ${ this.credentialCommand } | Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName "${ userPrincipalName }" -Credential ${ this.credentialCommand }` );
+            let cmd = `Get-ADUser "${ usr.username }" -Credential ${ this.credentialCommand } | `;
+            cmd += `Set-ADUser -SamAccountName "${ usr.alterations.changeName.newUserName }" -UserPrincipalName `;
+            cmd += `"${ userPrincipalName }" -Credential ${ this.credentialCommand }`;
+
+
+            // Alter names
+            if ( usr.alterations.changeName.newFirstName )
+                usr.firstName = usr.alterations.changeName.newFirstName;
+
+            if ( usr.alterations.changeName.newLastName )
+                usr.lastName = usr.alterations.changeName.newLastName;
+
+            if ( usr.alterations.changeName.newMiddleName )
+                usr.middleName = usr.alterations.changeName.newMiddleName;
+
+            if ( usr.alterations.changeName.newSuffix )
+                usr.suffix = usr.alterations.changeName.newSuffix;
+
+            cmd += ` -GivenName "${ usr.firstName }"`;
+            cmd += ` -Surname "${ usr.lastName }"`;
+            cmd += ` -OtherName "${ usr.middleName }"`;
+            cmd += ` -DisplayName "${ usr.firstName } ${ usr.lastName }`;
+            cmd += ( usr.suffix.match( /.*[\w\d].*/ ) ) ? `, ${ usr.suffix }"` : '"';
+
+            this.ps.addCommand( cmd );
+
+            cmd = `Get-ADUser "${ usr.alterations.changeName.newUserName }" -Credential ${ this.credentialCommand }`;
+            cmd += ` | Rename-ADObject -Credential ${ this.credentialCommand }`;
+            cmd += ` -NewName "${ usr.firstName } ${ usr.middleName } ${ usr.lastName }`;
+            cmd += ( usr.suffix.match( /.*[\w\d].*/ ) ) ? ` ${ usr.suffix }"` : '"';
+
+            this.ps.addCommand( cmd );
 
             try {
                 let output = await this.ps.invoke();
-                console.log( output );
                 usr.username = usr.alterations.changeName.newUserName;
             } catch ( err ) {
                 usr.username = null;

@@ -161,13 +161,13 @@ describe( 'User Builder Object should ', function () {
 
     } );
 
-    it( 'UserBuilder should extract user information from Active Directory', ( done ) => {
+    it( 'UserBuilder should properly rename users', ( done ) => {
 
         let original = {
             firstName: 'Bob',
             lastName: 'Marley',
             middleName: 'Lenard',
-            suffix: null,
+            suffix: 'Jr.',
             jobTitle: 'Library Media Specialist',
             primarySite: 'Aileen Colburn',
             userName: null
@@ -176,7 +176,7 @@ describe( 'User Builder Object should ', function () {
             firstName: 'Bob',
             lastName: 'Smith',
             middleName: 'Lenard',
-            suffix: null,
+            suffix: 'Sr.',
             jobTitle: 'Library Media Specialist',
             primarySite: 'Aileen Colburn',
             userName: null
@@ -212,10 +212,11 @@ describe( 'User Builder Object should ', function () {
                     originalUserBuilder.changeName( updated.firstName, updated.lastName, updated.middleName,
                         updated.suffix ).then( () => {
                         originalUserBuilder.build().then( ( alteredUser ) => {
-                            alteredUser.pushToAd().then( ( updatedUser ) => {
+                            alteredUser.pushToAd().then( ( newUserName ) => {
                                 //Run Tests
-                                console.log( updatedUser );
-                                resolve( updatedUser.username );
+                                let uNameRegEx = new RegExp( `${ updated.firstName.charAt( 0 ) }\w*${ updated.lastName }` );
+                                newUserName.should.match( uNameRegEx );
+                                resolve( newUserName );
                             } );
                         } );
                     } );
@@ -230,6 +231,11 @@ describe( 'User Builder Object should ', function () {
                 let originalUserBuilder = new UserBuilder();
                 originalUserBuilder.pullExistingUser( uName ).then( () => {
                     originalUserBuilder.build().then( ( originalUser ) => {
+                        originalUser.username.should.match( new RegExp( `${ updated.firstName.charAt( 0 ) }\w*${ updated.lastName }` ) );
+                        originalUser.firstName.should.equal( updated.firstName );
+                        originalUser.lastName.should.equal( updated.lastName );
+                        originalUser.middleName.should.equal( updated.middleName );
+                        originalUser.suffix.should.equal( updated.suffix );
                         originalUser.deleteFromAd().then( ( opStatus ) => {
                             opStatus.success.should.equal( true );
                             resolve();

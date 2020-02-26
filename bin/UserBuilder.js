@@ -12,6 +12,7 @@ class UserBuilder {
         this.office = null;
         this.firstName = null;
         this.lastName = null;
+        this.suffix = null;
         this.middleName = null;
         this.commonName = null;
         this.initials = null;
@@ -46,21 +47,24 @@ class UserBuilder {
             throw `Unable extract user group membership: ${ e.message }`;
         }
 
-        console.log( usr.groups );
-
         usr.groups.filter( g => config.get( 'StickyGroups' ).includes( g ) )
             .map( g => this.grouper.addGroupByName( g ) );
 
-        console.log( this.grouper.getGroups() );
         // Extract any name included in the display name, but not already accounted for as Given and Sur names
-        const middleNameMatcher = new RegExp( `${ usr.GivenName } (.*?) *${ usr.Surname }` ).exec( usr.Name );
+        const otherNamesMatcher = new RegExp( `${ usr.GivenName } (.*?) *${ usr.Surname }(.*)` ).exec( usr.Name );
 
-        // console.log( middleNameMatcher );
 
-        let middleName = ( middleNameMatcher == null ) ? '' : middleNameMatcher[1];
+        let middleName = ( otherNamesMatcher == null ) ? '' : otherNamesMatcher[1];
+        let suffix = ( otherNamesMatcher == null ) ? '' : otherNamesMatcher[2];
+
+        if ( suffix.match( /.*[\w\d].*/ ) ) {
+            this.addName( usr.GivenName, usr.Surname, middleName, suffix.replace( /\s/, '' ) );
+        } else {
+            this.addName( usr.GivenName, usr.Surname, middleName );
+        }
+
 
         // Add extracted names to the builder.
-        this.addName( usr.GivenName, usr.Surname, middleName );
 
         this.alterations = {};
     }
@@ -87,6 +91,7 @@ class UserBuilder {
         this.firstName = firstName;
         this.lastName = lastName;
         this.middleName = middleName === null ? '' : middleName;
+        this.suffix = suffix;
 
         //Collector for middle initials
         let middleInitials = "";
@@ -102,7 +107,7 @@ class UserBuilder {
 
         this.password = this.util.generatePassword( this.firstName, this.lastName );
 
-        this.displayName = `${ this.firstName } ${ this.middleName } ${ this.lastName } ${ suffix }`;
+        this.displayName = `${ this.firstName } ${ this.middleName } ${ this.lastName } ${ this.suffix }`;
 
         this.commonName = `${ this.firstName } ${ this.lastName }`;
     }
@@ -170,6 +175,7 @@ class UserBuilder {
                     password: this.password,
                     firstName: this.firstName,
                     lastName: this.lastName,
+                    suffix: this.suffix,
                     middleName: this.middleName,
                     commonName: this.commonName,
                     title: this.title,
@@ -188,6 +194,9 @@ class UserBuilder {
                             this.mediator.updateUser( this ) : this.mediator.createUser( this ) );
                         //TODO: In the event that the passed username is taken by another processes in between
                         // generation and the AD push, make sure the process tries again.
+
+                        //TODO: The return values of updateUser and createUser are inconsistent.
+                        // should be something like {success: true|false, newUserName: ...}
                     },
                     deleteFromAd: async function () {
                         return await this.mediator.deleteUser( this.username );
